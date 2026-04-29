@@ -1,8 +1,6 @@
 <!DOCTYPE html>
 <html lang="en" class="dark">
-<head> <
-
-<meta name="monetag" content="1a27ac2d7c1744588347482dd3655f10"> <meta name="google-adsense-account" content="ca-pub-6065974907777223">
+<head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>M Sahil Flix - Short Drama</title>
@@ -10,6 +8,16 @@
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
     <!-- Razorpay Payment SDK -->
     <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+    
+    <!-- Firebase Cloud Sync Support -->
+    <script type="module">
+        import { initializeApp, getApps, getApp } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js';
+        import { getAuth, signInAnonymously, signInWithCustomToken, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, signOut } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js';
+        import { getFirestore, doc, setDoc, getDoc, collection, onSnapshot } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js';
+
+        window.firebaseModules = { initializeApp, getApps, getApp, getAuth, signInAnonymously, signInWithCustomToken, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, signOut, getFirestore, doc, setDoc, getDoc, collection, onSnapshot };
+    </script>
+
     <script>
         tailwind.config = {
             darkMode: 'class',
@@ -17,8 +25,8 @@
                 extend: {
                     colors: {
                         primary: '#E11D48',
-                        darkbg: '#0F172A',
-                        darkcard: '#1E293B',
+                        darkbg: '#000000',
+                        darkcard: '#121212',
                     },
                     animation: {
                         'slide-up': 'slideUp 0.3s ease-out',
@@ -52,7 +60,7 @@
         .app-container {
             max-width: 480px;
             margin: 0 auto;
-            background-color: #0F172A;
+            background-color: #000000;
             height: 100vh;
             height: 100dvh;
             position: relative;
@@ -63,13 +71,13 @@
             position: absolute;
             top: 0; left: 0; right: 0; bottom: 0;
             overflow-y: auto;
-            background-color: #0F172A;
+            background-color: #000000;
             display: none;
         }
         .screen.active { display: block; }
         .bottom-nav { padding-bottom: env(safe-area-inset-bottom); }
         .glass-panel {
-            background: rgba(15, 23, 42, 0.7);
+            background: rgba(0, 0, 0, 0.7);
             backdrop-filter: blur(10px);
             -webkit-backdrop-filter: blur(10px);
         }
@@ -151,55 +159,178 @@
         <button onclick="guestLogin()" class="mt-8 text-slate-400 hover:text-white text-sm w-full text-center transition-colors">Continue as Guest</button>
     </div>
 
-    <!-- 2. HOME SCREEN -->
-    <div id="home" class="screen pb-20 hide-scroll" style="display:none;">
-        <div class="absolute top-0 w-full p-4 flex justify-between items-center z-10 glass-panel">
-            <h1 class="text-xl font-bold text-primary">M Sahil Flix</h1>
+    <!-- 2. FOR YOU SCREEN -->
+    <div id="home" class="screen bg-black" style="display:none;">
+        <!-- Full Screen Video Container -->
+        <div class="absolute inset-0" onclick="toggleForYouPlay()">
+            <video id="foryou-video" class="w-full h-full object-cover" playsinline autoplay loop preload="auto"></video>
+            
+            <div id="foryou-buffering" class="absolute inset-0 flex items-center justify-center pointer-events-none hidden z-10">
+                <div class="spinner-loader"></div>
+            </div>
+
+            <div id="foryou-pause-indicator" class="absolute inset-0 flex items-center justify-center pointer-events-none hidden z-10">
+                <div class="w-20 h-20 bg-black/50 rounded-full flex items-center justify-center backdrop-blur-sm">
+                    <i class="ph-fill ph-play text-4xl text-white"></i>
+                </div>
+            </div>
+            
+            <div class="absolute top-0 w-full h-32 bg-gradient-to-b from-black/80 to-transparent pointer-events-none z-10"></div>
+            <div class="absolute bottom-0 w-full h-64 bg-gradient-to-t from-black/90 via-black/40 to-transparent pointer-events-none z-10"></div>
+        </div>
+
+        <!-- Top Header -->
+        <div class="absolute top-0 w-full p-4 flex justify-between items-center z-20 pt-safe">
+            <h1 class="text-xl font-bold text-white tracking-tight drop-shadow-md">For You</h1>
             <div class="flex gap-3 text-xl">
-                <i class="ph ph-magnifying-glass cursor-pointer hover:text-primary transition-colors" onclick="navTo('search')"></i>
-                <i class="ph ph-bell cursor-pointer hover:text-primary transition-colors" onclick="showToast('No new notifications')"></i>
+                <i class="ph ph-magnifying-glass cursor-pointer text-white drop-shadow-md hover:text-primary transition-colors" onclick="navTo('search')"></i>
+                <i class="ph ph-bell cursor-pointer text-white drop-shadow-md hover:text-primary transition-colors" onclick="showToast('No new notifications')"></i>
             </div>
         </div>
 
-        <div id="featured-container" class="relative h-[60vh] w-full bg-slate-800"></div>
-
-        <div class="px-4 mt-6">
-            <div class="flex gap-3 overflow-x-auto hide-scroll pb-2">
-                <button class="px-4 py-1.5 bg-primary text-white rounded-full text-sm font-medium whitespace-nowrap">For You</button>
-                <button class="px-4 py-1.5 bg-darkcard text-slate-300 rounded-full text-sm font-medium whitespace-nowrap border border-slate-700">CEO & Romance</button>
-                <button class="px-4 py-1.5 bg-darkcard text-slate-300 rounded-full text-sm font-medium whitespace-nowrap border border-slate-700">Revenge</button>
-                <button class="px-4 py-1.5 bg-darkcard text-slate-300 rounded-full text-sm font-medium whitespace-nowrap border border-slate-700">Vampire</button>
+        <!-- Right Side Actions -->
+        <div class="absolute right-3 bottom-28 flex flex-col gap-6 items-center z-30 pb-safe">
+            <div class="flex flex-col items-center gap-1 cursor-pointer" onclick="toggleLikeInForYou(event)">
+                <div class="w-11 h-11 bg-black/40 rounded-full flex items-center justify-center backdrop-blur-sm border border-white/10 transition hover:bg-black/60">
+                    <i id="foryou-like-icon" class="ph ph-heart text-2xl text-white transition"></i>
+                </div>
+                <span class="text-[10px] font-bold text-white drop-shadow-md">Like</span>
+            </div>
+            <div class="flex flex-col items-center gap-1 cursor-pointer" onclick="toggleSaveInForYou(event)">
+                <div class="w-11 h-11 bg-black/40 rounded-full flex items-center justify-center backdrop-blur-sm border border-white/10 transition hover:bg-black/60">
+                    <i id="foryou-save-icon" class="ph ph-star text-2xl text-white transition"></i>
+                </div>
+                <span class="text-[10px] font-bold text-white drop-shadow-md">Save</span>
+            </div>
+            <div class="flex flex-col items-center gap-1 cursor-pointer" onclick="shareForYou(event)">
+                <div class="w-11 h-11 bg-black/40 rounded-full flex items-center justify-center backdrop-blur-sm border border-white/10 transition hover:bg-black/60">
+                    <i class="ph-fill ph-share-network text-2xl text-white"></i>
+                </div>
+                <span class="text-[10px] font-bold text-white drop-shadow-md">Share</span>
             </div>
         </div>
 
-        <div class="mt-6 px-4">
-            <h2 class="text-lg font-bold mb-3">Trending Now</h2>
-            <div id="trending-container" class="flex gap-3 overflow-x-auto hide-scroll pb-4 snap-x"></div>
-        </div>
-
-        <div class="mt-2 px-4 mb-6">
-            <h2 class="text-lg font-bold mb-3">Continue Watching</h2>
-            <div id="continue-container" class="flex gap-3 overflow-x-auto hide-scroll pb-4 snap-x"></div>
+        <!-- Bottom Info & Watch Now -->
+        <div class="absolute bottom-20 left-4 right-16 z-30 pb-safe pointer-events-none">
+            <h2 class="font-bold text-xl text-white leading-tight mb-1 drop-shadow-md line-clamp-1" id="foryou-title">Drama Title</h2>
+            <p class="text-sm text-slate-200 drop-shadow-md line-clamp-2 mb-4" id="foryou-desc">Description</p>
+            <button onclick="watchNowForYou(event)" class="pointer-events-auto bg-primary hover:bg-rose-700 text-white font-bold py-2.5 px-6 rounded-full shadow-lg shadow-rose-900/50 transition-colors active:scale-95 flex items-center gap-2">
+                <i class="ph-fill ph-play-circle text-lg"></i> Watch Now
+            </button>
         </div>
     </div>
 
-    <!-- 3. SEARCH SCREEN -->
-    <div id="search" class="screen pb-20 pt-16 px-4" style="display:none;">
-        <div class="absolute top-0 left-0 w-full p-4 glass-panel flex items-center gap-3 z-10">
-            <i class="ph ph-caret-left text-2xl cursor-pointer hover:text-primary" onclick="navTo('home')"></i>
-            <div class="relative flex-1">
-                <i class="ph ph-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"></i>
-                <input type="text" placeholder="Search dramas..." class="w-full bg-darkcard text-white py-2 pl-10 pr-4 rounded-full text-sm focus:outline-none focus:ring-1 focus:ring-primary border border-slate-700">
+    <!-- 3. SEARCH / NEW HOME TAB SCREEN -->
+    <div id="search" class="screen pb-20" style="display:none;">
+        <div class="sticky top-0 z-20 glass-panel pt-4 px-4 pb-2 border-b border-slate-800/50">
+            <!-- Search Bar -->
+            <div class="relative w-full mb-4">
+                <i class="ph ph-magnifying-glass absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 text-lg"></i>
+                <input type="text" placeholder="Search for your favorite dramas..." class="w-full bg-darkcard/80 text-white py-3 pl-12 pr-4 rounded-full text-sm focus:outline-none focus:ring-1 focus:ring-primary border border-slate-700/50 shadow-inner transition-colors">
+            </div>
+            
+            <!-- Top Tabs -->
+            <div class="flex gap-6 px-2">
+                <span class="text-primary font-bold border-b-2 border-primary pb-2 px-1 cursor-pointer">Drama</span>
+                <span class="text-slate-400 font-medium pb-2 px-1 cursor-pointer hover:text-white transition-colors">Novel</span>
+                <span class="text-slate-400 font-medium pb-2 px-1 cursor-pointer hover:text-white transition-colors">Anime</span>
             </div>
         </div>
-        <h2 class="text-sm font-bold text-slate-400 mt-4 mb-3 uppercase tracking-wider">Recommended</h2>
-        <div class="flex flex-wrap gap-2 mb-6">
-            <span class="px-3 py-1 bg-darkcard rounded-full text-sm text-slate-300 cursor-pointer hover:bg-slate-700" onclick="showToast('Searching...')">Billionaire</span>
-            <span class="px-3 py-1 bg-darkcard rounded-full text-sm text-slate-300 cursor-pointer hover:bg-slate-700" onclick="showToast('Searching...')">Fake Marriage</span>
-            <span class="px-3 py-1 bg-darkcard rounded-full text-sm text-slate-300 cursor-pointer hover:bg-slate-700" onclick="showToast('Searching...')">Betrayal</span>
+
+        <div class="px-4 pt-4">
+            <!-- Category Chips -->
+            <div class="flex gap-3 overflow-x-auto hide-scroll mb-6">
+                <button class="px-4 py-1.5 bg-primary text-white rounded-full text-[11px] font-bold whitespace-nowrap shadow-lg shadow-rose-900/20 tracking-wide">Popular</button>
+                <button class="px-4 py-1.5 bg-darkcard text-slate-300 rounded-full text-[11px] font-medium whitespace-nowrap border border-slate-700 hover:text-white transition-colors">New</button>
+                <button class="px-4 py-1.5 bg-darkcard text-slate-300 rounded-full text-[11px] font-medium whitespace-nowrap border border-slate-700 hover:text-white transition-colors">Coming Soon</button>
+                <button class="px-4 py-1.5 bg-darkcard text-slate-300 rounded-full text-[11px] font-medium whitespace-nowrap border border-slate-700 hover:text-white transition-colors">Dubbed</button>
+            </div>
+
+            <!-- Main Video Grid (3-Column Poster Grid) -->
+            <div class="mb-6">
+                <div id="browse-container" class="grid grid-cols-3 gap-x-2 gap-y-4">
+                    <!-- Populated by JS -->
+                </div>
+            </div>
+
+            <!-- Coming Soon Section -->
+            <div class="mb-6">
+                <div class="flex justify-between items-center mb-3">
+                    <h2 class="text-lg font-bold tracking-wide">Coming Soon 🎉</h2>
+                    <span class="text-xs text-slate-400 cursor-pointer hover:text-white">More <i class="ph ph-caret-right"></i></span>
+                </div>
+                <div id="coming-soon-container" class="flex gap-3 overflow-x-auto hide-scroll pb-2 snap-x"></div>
+            </div>
+
+            <!-- Popular Choices Section -->
+            <div class="mb-6">
+                <h2 class="text-lg font-bold mb-3 tracking-wide flex items-center gap-2"><i class="ph-fill ph-fire text-primary"></i> Popular Choices</h2>
+                <div id="popular-choices-container" class="grid grid-cols-3 gap-x-2 gap-y-4"></div>
+            </div>
         </div>
-        <h2 class="text-lg font-bold mb-3">Browse All</h2>
-        <div id="browse-container" class="grid grid-cols-2 gap-3"></div>
+
+        <!-- Fake Reward Ads -->
+        <div id="fake-floating-reward" class="fixed right-4 bottom-24 z-40 bg-gradient-to-tr from-yellow-400 to-orange-500 w-12 h-12 rounded-full flex items-center justify-center shadow-[0_0_15px_rgba(245,158,11,0.5)] animate-bounce cursor-pointer border-2 border-white/20" onclick="showToast('Fake Reward Bubble Clicked!')">
+            <i class="ph-fill ph-gift text-2xl text-white"></i>
+        </div>
+        
+        <div id="fake-bottom-ad" class="fixed bottom-16 left-2 right-2 z-40 bg-gradient-to-r from-indigo-900 to-purple-900 border border-purple-500/50 rounded-xl p-3 shadow-2xl flex items-center justify-between transition-all duration-300">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 bg-gradient-to-tr from-green-400 to-emerald-600 rounded-full flex items-center justify-center shadow-inner">
+                    <i class="ph-fill ph-currency-inr text-white text-xl"></i>
+                </div>
+                <div>
+                    <p class="text-white font-bold text-sm">Withdraw ₹500 Now!</p>
+                    <p class="text-[10px] text-purple-300">New user exclusive reward.</p>
+                </div>
+            </div>
+            <div class="flex items-center gap-3">
+                <button class="bg-white text-purple-900 px-3 py-1.5 rounded-full text-xs font-bold active:scale-95 shadow-md" onclick="showToast('Fake Ad Banner Clicked!')">Get</button>
+                <button class="text-slate-400 hover:text-white" onclick="document.getElementById('fake-bottom-ad').style.display='none'">
+                    <i class="ph ph-x"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- REWARDS SCREEN -->
+    <div id="rewards" class="screen pb-20 hide-scroll" style="display:none;">
+        <div class="absolute top-0 w-full p-4 flex justify-between items-center z-10 glass-panel">
+            <h1 class="text-xl font-bold text-primary">Rewards</h1>
+        </div>
+        <div class="px-4 pt-20">
+            <div class="bg-gradient-to-tr from-orange-500 to-yellow-500 rounded-2xl p-6 shadow-lg text-center mb-6 relative overflow-hidden">
+                <div class="absolute top-0 left-0 w-full h-full bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-20"></div>
+                <i class="ph-fill ph-coins text-white text-5xl mb-2 drop-shadow-md relative z-10"></i>
+                <p class="text-sm text-yellow-100 font-medium relative z-10">My Coin Balance</p>
+                <p class="text-4xl font-black text-white mb-4 drop-shadow-md relative z-10" id="rewards-coin-balance">500</p>
+                <button onclick="showCoinModal()" class="w-full bg-white text-orange-600 hover:bg-slate-100 py-3 rounded-xl font-bold transition-colors shadow-lg relative z-10 active:scale-95">Top Up Coins</button>
+            </div>
+            
+            <h2 class="text-lg font-bold mb-3 text-white">Daily Tasks</h2>
+            <div class="space-y-3">
+                <div class="bg-darkcard rounded-2xl border border-slate-700 p-4 shadow-md cursor-pointer hover:bg-slate-700 transition-colors flex items-center justify-between" onclick="claimDailyReward()">
+                    <div class="flex items-center gap-3">
+                        <div class="w-12 h-12 bg-darkbg rounded-full flex items-center justify-center text-purple-400 text-xl border border-slate-600"><i class="ph-fill ph-gift"></i></div>
+                        <div>
+                            <h3 class="text-white font-bold text-sm">Daily Check-in</h3>
+                            <p class="text-[10px] text-slate-400">Claim 50 free coins every day</p>
+                        </div>
+                    </div>
+                    <button class="bg-primary text-white px-4 py-1.5 rounded-full text-xs font-bold active:scale-95">Claim</button>
+                </div>
+                <div class="bg-darkcard rounded-2xl border border-slate-700 p-4 shadow-md cursor-pointer hover:bg-slate-700 transition-colors flex items-center justify-between" onclick="simulateAdWatch()">
+                    <div class="flex items-center gap-3">
+                        <div class="w-12 h-12 bg-darkbg rounded-full flex items-center justify-center text-yellow-400 text-xl border border-slate-600"><i class="ph-fill ph-monitor-play"></i></div>
+                        <div>
+                            <h3 class="text-white font-bold text-sm">Watch Video Ad</h3>
+                            <p class="text-[10px] text-slate-400">Earn 30 coins per video</p>
+                        </div>
+                    </div>
+                    <button class="bg-slate-800 text-white px-4 py-1.5 rounded-full text-xs font-bold active:scale-95">Watch</button>
+                </div>
+            </div>
+        </div>
     </div>
 
     <!-- 8. MY LIST SCREEN -->
@@ -213,7 +344,7 @@
                 <!-- JS Populated -->
             </div>
             <h2 class="text-lg font-bold mb-3 mt-4 text-white">Saved Dramas</h2>
-            <div id="mylist-saved-container" class="grid grid-cols-2 gap-3 pb-8">
+            <div id="mylist-saved-container" class="grid grid-cols-3 gap-x-2 gap-y-4 pb-8">
                 <!-- JS Populated -->
             </div>
         </div>
@@ -576,14 +707,6 @@
                     <span class="bg-primary text-[10px] font-bold px-2 py-0.5 rounded uppercase tracking-wider" id="player-ep-badge">EP 1</span>
                     <span class="font-bold text-sm drop-shadow-md" id="player-ep-title">The Setup</span>
                 </div>
-                <div class="flex items-center gap-2">
-                    <button onclick="prevEpisode(event)" class="w-8 h-8 bg-black/60 rounded-full flex items-center justify-center backdrop-blur-sm border border-white/20 hover:bg-primary/80 transition-colors active:scale-95">
-                        <i class="ph-fill ph-skip-back text-sm"></i>
-                    </button>
-                    <button onclick="nextEpisode(event)" class="w-8 h-8 bg-black/60 rounded-full flex items-center justify-center backdrop-blur-sm border border-white/20 hover:bg-primary/80 transition-colors active:scale-95">
-                        <i class="ph-fill ph-skip-forward text-sm"></i>
-                    </button>
-                </div>
             </div>
 
             <h2 class="font-bold text-lg leading-tight mb-1 drop-shadow-md w-[80%]" id="player-drama-title">Drama Title</h2>
@@ -737,20 +860,24 @@
     </div>
 
     <!-- BOTTOM NAVIGATION -->
-    <div id="bottom-nav" class="absolute bottom-0 w-full glass-panel border-t border-slate-800 flex justify-around items-center pt-2 pb-6 px-2 z-40 bottom-nav" style="display:none;">
-        <div class="nav-btn flex flex-col items-center gap-1 w-16 text-primary cursor-pointer transition-colors" data-target="home" onclick="navTo('home')">
+    <div id="bottom-nav" class="absolute bottom-0 w-full glass-panel border-t border-slate-800 flex justify-between items-center pt-3 pb-6 px-4 z-40 bottom-nav" style="display:none;">
+        <div class="nav-btn flex-1 flex flex-col items-center gap-1 text-primary cursor-pointer transition-colors" data-target="home" onclick="navTo('home')">
             <i class="ph-fill ph-fire text-2xl nav-icon"></i>
             <span class="text-[10px] font-medium">For You</span>
         </div>
-        <div class="nav-btn flex flex-col items-center gap-1 w-16 text-slate-400 cursor-pointer hover:text-slate-200 transition-colors" data-target="search" onclick="navTo('search')">
+        <div class="nav-btn flex-1 flex flex-col items-center gap-1 text-slate-400 cursor-pointer hover:text-slate-200 transition-colors" data-target="search" onclick="navTo('search')">
             <i class="ph ph-house text-2xl nav-icon"></i>
             <span class="text-[10px] font-medium">Home</span>
         </div>
-        <div class="nav-btn flex flex-col items-center gap-1 w-16 text-slate-400 cursor-pointer hover:text-slate-200 transition-colors" data-target="mylist" onclick="navTo('mylist')">
+        <div class="nav-btn flex-1 flex flex-col items-center gap-1 text-slate-400 cursor-pointer hover:text-slate-200 transition-colors" data-target="rewards" onclick="navTo('rewards')">
+            <i class="ph ph-gift text-2xl nav-icon"></i>
+            <span class="text-[10px] font-medium">Rewards</span>
+        </div>
+        <div class="nav-btn flex-1 flex flex-col items-center gap-1 text-slate-400 cursor-pointer hover:text-slate-200 transition-colors" data-target="mylist" onclick="navTo('mylist')">
             <i class="ph ph-bookmark-simple text-2xl nav-icon"></i>
             <span class="text-[10px] font-medium">My List</span>
         </div>
-        <div class="nav-btn flex flex-col items-center gap-1 w-16 text-slate-400 cursor-pointer hover:text-slate-200 transition-colors" data-target="profile" onclick="navTo('profile')">
+        <div class="nav-btn flex-1 flex flex-col items-center gap-1 text-slate-400 cursor-pointer hover:text-slate-200 transition-colors" data-target="profile" onclick="navTo('profile')">
             <i class="ph ph-user text-2xl nav-icon"></i>
             <span class="text-[10px] font-medium">Profile</span>
         </div>
@@ -759,6 +886,130 @@
 </div>
 
 <script>
+    // --- FIREBASE HELPER FUNCTIONS ---
+    let db = null;
+    let auth = null;
+    let isFirebaseInitializing = false;
+    const appId = typeof __app_id !== 'undefined' ? __app_id : 'msahilflix-app';
+
+    async function initFirebase() {
+        if (db) return;
+        if (isFirebaseInitializing) {
+            while(isFirebaseInitializing) await new Promise(r => setTimeout(r, 100));
+            return;
+        }
+        isFirebaseInitializing = true;
+        
+        for(let i=0; i<50; i++) {
+            if(window.firebaseModules) break;
+            await new Promise(r => setTimeout(r, 100));
+        }
+        if (!window.firebaseModules) {
+            isFirebaseInitializing = false;
+            return;
+        }
+
+        const { initializeApp, getApps, getApp, getAuth, getFirestore, onSnapshot } = window.firebaseModules;
+        
+        const firebaseConfig = {
+            apiKey: "AIzaSyCebIdiDXJQWSA0VSS8GsZDcMU6E6FNT68",
+            authDomain: "m-sahil-flix.firebaseapp.com",
+            projectId: "m-sahil-flix",
+            storageBucket: "m-sahil-flix.firebasestorage.app",
+            messagingSenderId: "563427924049",
+            appId: "1:563427924049:web:97c7e36111d4df833c0070"
+        };
+
+        try {
+            const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
+            auth = getAuth(app);
+            db = getFirestore(app);
+            
+            const { doc } = window.firebaseModules;
+            
+            // Auto-sync dramas
+            const dramasRef = doc(db, 'artifacts', appId, 'public', 'data', 'appData', 'dramas');
+            onSnapshot(dramasRef, (snapshot) => {
+                if (snapshot.exists()) {
+                    try {
+                        const cloudDramas = JSON.parse(snapshot.data().data);
+                        if (cloudDramas && cloudDramas.length > 0) {
+                            dramas = cloudDramas;
+                            localStorage.setItem('dramaBite_dramas', JSON.stringify(dramas));
+                            renderHome();
+                            renderMyList();
+                            updateAdminSeriesDropdown();
+                        }
+                    } catch(e) { console.error(e); }
+                }
+            }, (error) => console.error("Dramas sync error:", error));
+
+            // Auto-sync comments
+            const commentsRef = doc(db, 'artifacts', appId, 'public', 'data', 'appData', 'comments');
+            onSnapshot(commentsRef, (snapshot) => {
+                if (snapshot.exists()) {
+                    try {
+                        const cloudComments = JSON.parse(snapshot.data().data);
+                        if (cloudComments) {
+                            allComments = cloudComments;
+                            localStorage.setItem('dramaBite_comments', JSON.stringify(allComments));
+                            if(document.getElementById('comments-sheet').style.display === 'flex') {
+                                renderComments();
+                            }
+                        }
+                    } catch(e) { console.error(e); }
+                }
+            }, (error) => console.error("Comments sync error:", error));
+
+        } catch(e) { console.error("Firebase init error", e); db = null; }
+        
+        isFirebaseInitializing = false;
+    }
+
+    async function cloudSaveUser(userData) {
+        await initFirebase();
+        if (!db || !window.firebaseModules) return;
+        const { doc, setDoc } = window.firebaseModules;
+        try {
+            const docId = userData.id.toLowerCase().replace(/[\/]/g, '_');
+            const userRef = doc(db, 'artifacts', appId, 'public', 'data', 'users', docId);
+            await setDoc(userRef, userData);
+        } catch(e) { console.error("Save error:", e); }
+    }
+
+    async function cloudLoadUser(userId) {
+        await initFirebase();
+        if (!db || !window.firebaseModules) return null;
+        const { doc, getDoc } = window.firebaseModules;
+        try {
+            const docId = userId.toLowerCase().replace(/[\/]/g, '_');
+            const userRef = doc(db, 'artifacts', appId, 'public', 'data', 'users', docId);
+            const snapshot = await getDoc(userRef);
+            if (snapshot.exists()) return snapshot.data();
+        } catch(e) { console.error("Load error:", e); }
+        return null;
+    }
+
+    async function cloudSaveComments(commentsData) {
+        await initFirebase();
+        if (!db || !window.firebaseModules) return;
+        const { doc, setDoc } = window.firebaseModules;
+        try {
+            const ref = doc(db, 'artifacts', appId, 'public', 'data', 'appData', 'comments');
+            await setDoc(ref, { data: JSON.stringify(commentsData) });
+        } catch(e) { console.error(e); }
+    }
+
+    async function cloudSaveDramas(dramasData) {
+        await initFirebase();
+        if (!db || !window.firebaseModules) return;
+        const { doc, setDoc } = window.firebaseModules;
+        try {
+            const ref = doc(db, 'artifacts', appId, 'public', 'data', 'appData', 'dramas');
+            await setDoc(ref, { data: JSON.stringify(dramasData) });
+        } catch(e) { console.error(e); }
+    }
+
     // --- STATE & AUTHENTICATION ---
     let isNavigatingFromHistory = false;
     let lastBackPressTime = 0;
@@ -786,7 +1037,8 @@
         language: 'English',
         autoplay: true,
         subtitles: true,
-        pin: null
+        pin: null,
+        lastDailyClaim: null
     };
 
     let activeDramaId = null;
@@ -796,6 +1048,12 @@
     let currentStreamQuality = 'auto';
     let cachedPreloads = new Set(); 
     let allComments = {};
+    
+    // For You state
+    let currentForYouIndex = 0;
+    let fyTouchStartY = 0;
+    let isFyDragging = false;
+    let fyHasMoved = false;
 
     // Default playable MP4 Video URLs
     const DUMMY_VIDEOS = [
@@ -862,6 +1120,14 @@
 
         const targetScreen = e.state ? e.state.screen : 'exit';
 
+        if (currentScreen === 'search' && (targetScreen === 'splash' || targetScreen === 'exit')) {
+            isNavigatingFromHistory = true;
+            navTo('home');
+            isNavigatingFromHistory = false;
+            history.pushState({ screen: 'home' }, '', `#home`);
+            return;
+        }
+
         if (targetScreen === 'exit' || targetScreen === 'splash' || (targetScreen === 'auth' && user.id !== 'guest')) {
             const currentTime = new Date().getTime();
             if (currentTime - lastBackPressTime < 2000) {
@@ -888,24 +1154,22 @@
     }
 
     // --- INITIALIZATION ---
-    window.onload = function() {
+    window.onload = async function() {
         history.replaceState({ screen: 'exit' }, '', '#exit');
         history.pushState({ screen: 'splash' }, '', '#splash');
 
+        // Immediate local load for fast UI
         const savedDramas = localStorage.getItem('dramaBite_dramas');
-        if (savedDramas) {
-            try { dramas = JSON.parse(savedDramas); } catch(e) {}
-        }
+        if (savedDramas) { try { dramas = JSON.parse(savedDramas); } catch(e) {} }
 
         const savedUsers = localStorage.getItem('dramaBite_users');
-        if (savedUsers) {
-            try { appUsers = JSON.parse(savedUsers); } catch(e) {}
-        }
+        if (savedUsers) { try { appUsers = JSON.parse(savedUsers); } catch(e) {} }
 
         const savedComments = localStorage.getItem('dramaBite_comments');
-        if (savedComments) {
-            try { allComments = JSON.parse(savedComments); } catch(e) {}
-        }
+        if (savedComments) { try { allComments = JSON.parse(savedComments); } catch(e) {} }
+
+        // Start async init to connect listeners
+        initFirebase();
 
         const adminFreqField = document.getElementById('admin-ad-freq');
         if(adminFreqField) adminFreqField.value = adFrequency;
@@ -914,6 +1178,7 @@
         updateUserUI();
         setupVideoControls();
         setupSwipe();
+        setupForYouSwipe();
         updateAdminSeriesDropdown(); 
         
         document.getElementById('player').addEventListener('click', (e) => {
@@ -925,6 +1190,7 @@
 
         splashTimeout = setTimeout(() => {
             dismissSplash();
+            loadForYouVideo(); 
         }, 3000);
     };
 
@@ -932,48 +1198,76 @@
         localStorage.setItem('dramaBite_session', JSON.stringify({ type, id }));
     }
 
-    function restoreSession() {
+    async function restoreSession() {
         const sessionData = localStorage.getItem('dramaBite_session');
-        if (!sessionData) return false;
+        let sessionUserId = null;
+        let sessionType = null;
         
-        try {
+        if (sessionData) {
             const session = JSON.parse(sessionData);
-            if (session.type === 'admin') {
-                isAdmin = true;
-                Object.assign(user, { id: 'admin', name: 'Admin Sahil', coins: 999999, isSubscribed: true, subscriptionTier: 'ultra', history: [], progress: {}, likedDramas: [], savedDramas: [], unlockedEpisodes: [], language: 'English', autoplay: true, subtitles: true, pin: null });
-                setupAdminUI();
-                return true;
-            } else if (session.type === 'user') {
-                const foundUser = appUsers.find(u => u.id === session.id);
-                if (foundUser) {
-                    isAdmin = false;
-                    Object.assign(user, foundUser);
-                    user.progress = user.progress || {};
-                    user.likedDramas = user.likedDramas || [];
-                    user.savedDramas = user.savedDramas || [];
-                    user.language = user.language || 'English';
-                    if (user.subscriptionTier === undefined) user.subscriptionTier = null;
-                    if (user.autoplay === undefined) user.autoplay = true;
-                    if (user.subtitles === undefined) user.subtitles = true;
-                    setupUserUI();
-                    return true;
-                }
-            } else if (session.type === 'guest') {
+            sessionType = session.type;
+            sessionUserId = session.id;
+        }
+        
+        if (sessionType === 'admin') {
+            isAdmin = true;
+            Object.assign(user, { id: 'admin', name: 'Admin Sahil', coins: 999999, isSubscribed: true, subscriptionTier: 'ultra', history: [], progress: {}, likedDramas: [], savedDramas: [], unlockedEpisodes: [], language: 'English', autoplay: true, subtitles: true, pin: null, lastDailyClaim: null });
+            setupAdminUI();
+            return true;
+        } else if (sessionType === 'guest') {
+            isAdmin = false;
+            Object.assign(user, { id: 'guest', name: 'Guest User', coins: 200, isSubscribed: false, subscriptionTier: null, unlockedEpisodes: ['ep_1_1', 'ep_1_2', 'ep_2_1', 'ep_3_1'], history: [], progress: {}, likedDramas: [], savedDramas: [], language: 'English', autoplay: true, subtitles: true, pin: null, lastDailyClaim: null });
+            setupGuestUI();
+            return true;
+        }
+        
+        await initFirebase();
+        let currentUserEmail = null;
+        if (window.firebaseModules && auth) {
+            await new Promise((resolve) => {
+                const unsubscribe = window.firebaseModules.onAuthStateChanged(auth, (fbUser) => {
+                    if (fbUser) currentUserEmail = fbUser.email;
+                    unsubscribe();
+                    resolve();
+                });
+                setTimeout(resolve, 1500); 
+            });
+        }
+
+        let searchId = sessionUserId;
+        if (currentUserEmail) {
+            searchId = currentUserEmail.replace('@msahilflix.dummy.com', '');
+        }
+
+        if (searchId) {
+            let foundUser = await cloudLoadUser(searchId);
+            if (foundUser) {
                 isAdmin = false;
-                Object.assign(user, { id: 'guest', name: 'Guest User', coins: 200, isSubscribed: false, subscriptionTier: null, unlockedEpisodes: ['ep_1_1', 'ep_1_2', 'ep_2_1', 'ep_3_1'], history: [], progress: {}, likedDramas: [], savedDramas: [], language: 'English', autoplay: true, subtitles: true, pin: null });
-                setupGuestUI();
+                Object.assign(user, foundUser);
+                user.progress = user.progress || {};
+                user.likedDramas = user.likedDramas || [];
+                user.savedDramas = user.savedDramas || [];
+                user.language = user.language || 'English';
+                if (user.subscriptionTier === undefined) user.subscriptionTier = null;
+                if (user.autoplay === undefined) user.autoplay = true;
+                if (user.subtitles === undefined) user.subtitles = true;
+                if (user.lastDailyClaim === undefined) user.lastDailyClaim = null;
+                setupUserUI();
+                saveSession('user', user.id);
                 return true;
             }
-        } catch(e) { return false; }
+        }
+        
         return false;
     }
 
-    function dismissSplash() {
+    async function dismissSplash() {
         if(splashTimeout) clearTimeout(splashTimeout);
         const splash = document.getElementById('splash');
         if (splash) splash.style.display = 'none';
         
-        if (restoreSession()) {
+        const restored = await restoreSession();
+        if (restored) {
             navTo('home'); 
         } else {
             navTo('auth'); 
@@ -1010,9 +1304,9 @@
         }
     }
 
-    function signup() {
+    async function signup() {
         const name = document.getElementById('signup-name').value.trim();
-        const id = document.getElementById('signup-username').value.trim();
+        const id = document.getElementById('signup-username').value.trim().toLowerCase();
         const pass = document.getElementById('signup-password').value;
         const conf = document.getElementById('signup-confirm').value;
 
@@ -1024,19 +1318,52 @@
             showToast("Passwords do not match!");
             return;
         }
+        if (pass.length < 6) {
+            showToast("Password must be at least 6 characters.");
+            return;
+        }
         
-        if(id === 'adminsahil' || appUsers.find(u => u.id === id)) {
+        showToast("Checking availability...");
+        await initFirebase();
+
+        let existingUser = await cloudLoadUser(id);
+
+        if(id.toLowerCase() === 'adminsahil' || existingUser) {
             showToast("Account already exists with this email/mobile.");
             return;
         }
 
+        showToast("Creating account...");
+
         const newUser = {
             id: id, name: name, password: pass, coins: 500, isSubscribed: false, subscriptionTier: null,
-            unlockedEpisodes: ['ep_1_1', 'ep_1_2', 'ep_2_1', 'ep_3_1'], history: [], progress: {}, likedDramas: [], savedDramas: [], language: 'English', autoplay: true, subtitles: true, pin: null
+            unlockedEpisodes: ['ep_1_1', 'ep_1_2', 'ep_2_1', 'ep_3_1'], history: [], progress: {}, likedDramas: [], savedDramas: [], language: 'English', autoplay: true, subtitles: true, pin: null, lastDailyClaim: null
         };
 
-        appUsers.push(newUser);
-        localStorage.setItem('dramaBite_users', JSON.stringify(appUsers));
+        if (window.firebaseModules && auth) {
+            const { createUserWithEmailAndPassword } = window.firebaseModules;
+            let email = id;
+            if (!email.includes('@')) {
+                email = `${id}@msahilflix.dummy.com`;
+            }
+            try {
+                await createUserWithEmailAndPassword(auth, email, pass);
+            } catch (err) {
+                console.log("Firebase create user error:", err);
+                if (err.code === 'auth/email-already-in-use') {
+                    showToast("Account already exists.");
+                    return;
+                } else {
+                    showToast("Error creating account: " + err.message);
+                    return;
+                }
+            }
+        } else {
+            showToast("Network connection error.");
+            return;
+        }
+
+        await cloudSaveUser(newUser);
         
         showToast("Account created successfully! Please log in.");
         
@@ -1077,7 +1404,7 @@
         renderMyList();
     }
 
-    function login() {
+    async function login() {
         const userVal = document.getElementById('login-username').value.trim();
         const passVal = document.getElementById('login-password').value.trim();
 
@@ -1088,7 +1415,7 @@
 
         if (userVal === "adminsahil" && passVal === adminPass) {
             isAdmin = true;
-            Object.assign(user, { id: 'admin', name: 'Admin Sahil', coins: 999999, isSubscribed: true, subscriptionTier: 'ultra', history: [], progress: {}, likedDramas: [], savedDramas: [], unlockedEpisodes: [], language: 'English', autoplay: true, subtitles: true, pin: null });
+            Object.assign(user, { id: 'admin', name: 'Admin Sahil', coins: 999999, isSubscribed: true, subscriptionTier: 'ultra', history: [], progress: {}, likedDramas: [], savedDramas: [], unlockedEpisodes: [], language: 'English', autoplay: true, subtitles: true, pin: null, lastDailyClaim: null });
             setupAdminUI();
             saveSession('admin');
             showToast("Welcome back, Admin!");
@@ -1096,7 +1423,38 @@
             return;
         } 
 
-        const foundUser = appUsers.find(u => u.id === userVal && u.password === passVal);
+        showToast("Logging in...");
+        await initFirebase();
+        
+        let foundUser = null;
+
+        if (window.firebaseModules && auth) {
+            const { signInWithEmailAndPassword } = window.firebaseModules;
+            let email = userVal;
+            if (!email.includes('@')) {
+                email = `${userVal}@msahilflix.dummy.com`;
+            }
+            try {
+                await signInWithEmailAndPassword(auth, email, passVal);
+                foundUser = await cloudLoadUser(userVal);
+            } catch (error) {
+                console.log("Firebase Auth error:", error.code);
+                showToast("Account not found or incorrect password.");
+                return;
+            }
+        } else {
+            showToast("Network connection error.");
+            return;
+        }
+
+        if (!foundUser) {
+             foundUser = {
+                id: userVal, name: "Guest", password: passVal, coins: 500, isSubscribed: false, subscriptionTier: null,
+                unlockedEpisodes: ['ep_1_1', 'ep_1_2', 'ep_2_1', 'ep_3_1'], history: [], progress: {}, likedDramas: [], savedDramas: [], language: 'English', autoplay: true, subtitles: true, pin: null, lastDailyClaim: null
+            };
+            await cloudSaveUser(foundUser);
+        }
+
         if (foundUser) {
             isAdmin = false;
             Object.assign(user, foundUser); 
@@ -1107,31 +1465,36 @@
             if (user.subscriptionTier === undefined) user.subscriptionTier = null;
             if (user.autoplay === undefined) user.autoplay = true;
             if (user.subtitles === undefined) user.subtitles = true;
+            if (user.lastDailyClaim === undefined) user.lastDailyClaim = null;
+            
             setupUserUI();
             saveSession('user', user.id);
             showToast("Logged in successfully!");
             navTo('home');
-        } else {
-            showToast("Invalid username or password.");
         }
     }
 
     function guestLogin() {
         isAdmin = false;
-        user = { id: 'guest', name: 'Guest User', coins: 200, isSubscribed: false, subscriptionTier: null, unlockedEpisodes: ['ep_1_1', 'ep_1_2', 'ep_2_1', 'ep_3_1'], history: [], progress: {}, likedDramas: [], savedDramas: [], language: 'English', autoplay: true, subtitles: true, pin: null };
+        user = { id: 'guest', name: 'Guest User', coins: 200, isSubscribed: false, subscriptionTier: null, unlockedEpisodes: ['ep_1_1', 'ep_1_2', 'ep_2_1', 'ep_3_1'], history: [], progress: {}, likedDramas: [], savedDramas: [], language: 'English', autoplay: true, subtitles: true, pin: null, lastDailyClaim: null };
         setupGuestUI();
         saveSession('guest');
         showToast("Logged in as Guest");
         navTo('home');
     }
 
-    function logout() {
+    async function logout() {
         isAdmin = false;
         document.getElementById('login-username').value = '';
         document.getElementById('login-password').value = '';
         
         localStorage.removeItem('dramaBite_session');
-        user = { id: 'guest', name: 'Guest User', coins: 200, isSubscribed: false, subscriptionTier: null, unlockedEpisodes: [], history: [], progress: {}, likedDramas: [], savedDramas: [], language: 'English', autoplay: true, subtitles: true, pin: null };
+        user = { id: 'guest', name: 'Guest User', coins: 200, isSubscribed: false, subscriptionTier: null, unlockedEpisodes: [], history: [], progress: {}, likedDramas: [], savedDramas: [], language: 'English', autoplay: true, subtitles: true, pin: null, lastDailyClaim: null };
+        
+        if (window.firebaseModules && auth) {
+            try { await window.firebaseModules.signOut(auth); } catch(e){}
+        }
+
         renderMyList();
         
         showToast("Logged out successfully");
@@ -1145,7 +1508,11 @@
         if (index > -1) {
             appUsers[index] = { ...user };
             localStorage.setItem('dramaBite_users', JSON.stringify(appUsers));
+        } else {
+            appUsers.push({...user});
+            localStorage.setItem('dramaBite_users', JSON.stringify(appUsers));
         }
+        cloudSaveUser(user);
     }
 
     // --- ROUTING & NAVIGATION ---
@@ -1181,6 +1548,15 @@
             const video = document.getElementById('main-video');
             if (video) video.pause();
             isPlaying = false;
+        }
+
+        const fyVideo = document.getElementById('foryou-video');
+        if (fyVideo) {
+            if (screenId === 'home') {
+                fyVideo.play().catch(e => console.log(e));
+            } else {
+                fyVideo.pause();
+            }
         }
         
         if(screenId === 'settings') updateSettingsUI();
@@ -1337,62 +1713,76 @@
     function renderHome() {
         if (!dramas || dramas.length === 0) return;
         
-        const feat = dramas.find(d => d.episodes && d.episodes.length > 0) || dramas[0];
-        
-        document.getElementById('featured-container').innerHTML = `
-            <img src="${feat.cover}" class="w-full h-full object-cover">
-            <div class="absolute inset-0 bg-gradient-to-t from-darkbg via-darkbg/40 to-transparent"></div>
-            <div class="absolute bottom-0 w-full p-6 text-center">
-                <span class="px-2 py-1 bg-primary/20 text-primary text-[10px] font-bold rounded uppercase tracking-wider border border-primary/50">Top Pick</span>
-                <h2 class="text-3xl font-black mt-2 mb-2 leading-tight drop-shadow-md">${feat.title}</h2>
-                <p class="text-sm text-slate-300 mb-4 line-clamp-2 drop-shadow">${feat.desc}</p>
-                <div class="flex gap-3 px-4">
-                    <button onclick="openPlayer('${feat.id}')" class="flex-1 bg-white hover:bg-slate-200 transition-colors text-black font-bold py-3 rounded-full flex items-center justify-center gap-2 active:scale-95 shadow-lg">
-                        <i class="ph-fill ph-play text-xl"></i> Play
-                    </button>
-                    <button onclick="showToast('Added to Watchlist')" class="w-12 h-12 bg-slate-800/80 hover:bg-slate-700 transition-colors border border-slate-600 rounded-full flex items-center justify-center active:scale-95 shadow-lg">
-                        <i class="ph ph-plus text-xl"></i>
-                    </button>
-                </div>
-            </div>
-        `;
-
-        document.getElementById('trending-container').innerHTML = dramas.map(d => `
-            <div class="shrink-0 w-32 relative rounded-xl overflow-hidden shadow-lg border border-slate-800 cursor-pointer snap-start transition-transform hover:scale-105 active:scale-95" onclick="openPlayer('${d.id}')">
-                <div class="aspect-[2/3]">
+        // Search/Home UI Updates
+        document.getElementById('coming-soon-container').innerHTML = dramas.slice().reverse().map(d => `
+            <div class="shrink-0 w-36 relative rounded-lg overflow-hidden cursor-pointer group active:scale-95 transition-transform snap-start bg-darkcard shadow-lg border border-slate-800/80" onclick="openPlayer('${d.id}')">
+                <div class="aspect-[2/3] w-full relative">
                     <img src="${d.cover}" class="w-full h-full object-cover">
+                    <div class="absolute inset-0 bg-black/20 group-hover:bg-transparent transition-colors"></div>
+                    <div class="absolute top-1 left-1 bg-rose-600 text-white text-[8px] font-black px-1.5 py-0.5 rounded uppercase tracking-wider">NEW</div>
                 </div>
-                <div class="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent flex flex-col justify-end p-2">
-                    <h3 class="text-xs font-bold truncate text-white">${d.title}</h3>
-                    <p class="text-[10px] text-slate-300">${d.episodes ? d.episodes.length : 0} EP</p>
+                <div class="p-2">
+                    <h3 class="text-[11px] font-bold line-clamp-1 text-slate-100">${d.title}</h3>
+                    <button class="mt-2 w-full bg-primary/20 hover:bg-primary/40 text-primary text-[10px] font-bold py-1 rounded-full transition-colors flex items-center justify-center gap-1">
+                        <i class="ph-fill ph-play-circle"></i> Watch
+                    </button>
                 </div>
-                ${d.trending ? '<div class="absolute top-1 right-1 bg-primary text-[8px] font-bold px-1 rounded">HOT</div>' : ''}
             </div>
         `).join('');
 
-        document.getElementById('continue-container').innerHTML = dramas.slice(0,2).map(d => `
-            <div class="shrink-0 w-40 cursor-pointer snap-start group active:scale-95 transition-transform" onclick="openPlayer('${d.id}')">
-                <div class="aspect-video relative rounded-lg overflow-hidden border border-slate-800 mb-1 shadow-lg">
+        document.getElementById('popular-choices-container').innerHTML = dramas.map((d, index) => `
+            <div class="relative rounded-lg overflow-hidden cursor-pointer group active:scale-95 transition-transform flex flex-col" onclick="openPlayer('${d.id}')">
+                <div class="relative aspect-[2/3] w-full rounded-lg overflow-hidden shadow-md border border-slate-800/80 mb-1.5 bg-darkcard">
                     <img src="${d.cover}" class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110">
-                    <div class="absolute inset-0 bg-black/40 flex items-center justify-center">
-                        <i class="ph-fill ph-play-circle text-3xl text-white/80 group-hover:text-white transition-colors"></i>
+                    <div class="absolute inset-0 bg-gradient-to-t from-black/90 via-transparent to-transparent opacity-90"></div>
+                    <div class="absolute top-0 left-0 bg-gradient-to-br ${index === 0 ? 'from-yellow-400 to-orange-500' : index === 1 ? 'from-slate-300 to-slate-500' : index === 2 ? 'from-amber-600 to-orange-800' : 'from-slate-700 to-slate-800'} text-white text-[10px] font-black w-6 h-6 flex items-center justify-center rounded-br-lg shadow-lg">
+                        ${index + 1}
                     </div>
-                    <div class="absolute bottom-0 left-0 h-1 bg-primary w-1/3"></div>
+                    <div class="absolute bottom-1 left-1 flex items-center gap-1 text-[8px] text-white font-bold">
+                        <i class="ph-fill ph-fire text-orange-500"></i> ${Math.floor(Math.random() * 90 + 10)}K
+                    </div>
                 </div>
-                <h3 class="text-xs font-bold truncate text-slate-200 group-hover:text-white transition-colors">${d.title}</h3>
-                <p class="text-[10px] text-slate-400">EP 1 | Start Watching</p>
+                <h3 class="text-[10px] font-bold line-clamp-2 text-slate-200 leading-tight group-hover:text-primary transition-colors">${d.title}</h3>
             </div>
         `).join('');
 
         document.getElementById('browse-container').innerHTML = dramas.map(d => `
-            <div class="relative rounded-xl overflow-hidden border border-slate-800 cursor-pointer aspect-[2/3] group shadow-lg active:scale-95 transition-transform" onclick="openPlayer('${d.id}')">
-                <img src="${d.cover}" class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110">
-                <div class="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent flex flex-col justify-end p-2">
-                    <span class="text-[9px] text-primary font-bold mb-0.5">${d.category}</span>
-                    <h3 class="text-xs font-bold line-clamp-2 text-white leading-tight group-hover:text-primary transition-colors">${d.title}</h3>
+            <div class="relative rounded-lg overflow-hidden cursor-pointer group active:scale-95 transition-transform flex flex-col" onclick="openPlayer('${d.id}')">
+                <div class="relative aspect-[2/3] w-full rounded-lg overflow-hidden shadow-md border border-slate-800/80 mb-2 bg-darkcard">
+                    <img src="${d.cover}" class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110">
+                    <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-80"></div>
+                    <div class="absolute top-1 right-1 bg-primary text-white text-[8px] font-black px-1.5 py-0.5 rounded shadow-lg uppercase tracking-wider">
+                        ${d.trending ? 'HOT' : 'DUBBED'}
+                    </div>
+                    <div class="absolute bottom-1 left-1 flex items-center gap-1 bg-black/60 backdrop-blur-md px-1.5 py-0.5 rounded text-[8px] text-white font-bold border border-white/10">
+                        <i class="ph-fill ph-play text-primary"></i> ${Math.floor(Math.random() * 9 + 1)}.${Math.floor(Math.random() * 9)}M
+                    </div>
                 </div>
+                <h3 class="text-[11px] font-bold line-clamp-2 text-slate-100 leading-tight group-hover:text-primary transition-colors">${d.title}</h3>
+                <p class="text-[9px] text-slate-400 mt-1 truncate">${d.category} • ${d.episodes ? d.episodes.length : 0} Eps</p>
             </div>
         `).join('');
+    }
+
+    function toggleLikeInHome(dramaId) {
+        if (!user.likedDramas) user.likedDramas = [];
+        const icon = document.getElementById(`home-like-icon-${dramaId}`);
+        if (user.likedDramas.includes(dramaId)) {
+            user.likedDramas = user.likedDramas.filter(id => id !== dramaId);
+            if (icon) {
+                icon.classList.remove('ph-fill', 'text-primary');
+                icon.classList.add('ph');
+            }
+            showToast("Removed from Liked");
+        } else {
+            user.likedDramas.push(dramaId);
+            if (icon) {
+                icon.classList.remove('ph');
+                icon.classList.add('ph-fill', 'text-primary');
+            }
+            showToast("Added to Liked Dramas");
+        }
+        syncActiveUser();
     }
 
     function renderMyList() {
@@ -1769,6 +2159,227 @@
         }, {passive: true});
     }
 
+    function toggleForYouPlay() {
+        if (fyHasMoved) return;
+        const video = document.getElementById('foryou-video');
+        const indicator = document.getElementById('foryou-pause-indicator');
+        if (!video) return;
+        if (video.paused) {
+            video.play();
+            if(indicator) indicator.classList.add('hidden');
+        } else {
+            video.pause();
+            if(indicator) indicator.classList.remove('hidden');
+        }
+    }
+
+    function loadForYouVideo() {
+        if (!dramas || dramas.length === 0) return;
+        const drama = dramas[currentForYouIndex];
+        const video = document.getElementById('foryou-video');
+        const title = document.getElementById('foryou-title');
+        const desc = document.getElementById('foryou-desc');
+        const likeIcon = document.getElementById('foryou-like-icon');
+        const saveIcon = document.getElementById('foryou-save-icon');
+
+        if(title) title.innerText = drama.title;
+        if(desc) desc.innerText = drama.desc;
+
+        if (likeIcon) {
+            if (user.likedDramas && user.likedDramas.includes(drama.id)) {
+                likeIcon.classList.remove('ph');
+                likeIcon.classList.add('ph-fill', 'text-primary');
+            } else {
+                likeIcon.classList.remove('ph-fill', 'text-primary');
+                likeIcon.classList.add('ph');
+            }
+        }
+
+        if (saveIcon) {
+            if (user.savedDramas && user.savedDramas.includes(drama.id)) {
+                saveIcon.classList.remove('ph', 'text-white');
+                saveIcon.classList.add('ph-fill', 'text-yellow-400');
+            } else {
+                saveIcon.classList.remove('ph-fill', 'text-yellow-400');
+                saveIcon.classList.add('ph', 'text-white');
+            }
+        }
+
+        const videoSrc = (drama.episodes && drama.episodes.length > 0) ? drama.episodes[0].video : '';
+        if (video && video.src !== videoSrc) {
+            video.src = videoSrc;
+        }
+        
+        if (video) {
+            video.onended = () => {
+                nextForYou();
+            };
+            const playPromise = video.play();
+            if (playPromise !== undefined) {
+                playPromise.then(_ => {
+                    const indicator = document.getElementById('foryou-pause-indicator');
+                    if(indicator) indicator.classList.add('hidden');
+                }).catch(error => {
+                    const indicator = document.getElementById('foryou-pause-indicator');
+                    if(indicator) indicator.classList.remove('hidden');
+                });
+            }
+        }
+    }
+
+    function nextForYou() {
+        if (!dramas || dramas.length === 0) return;
+        if (currentForYouIndex < dramas.length - 1) currentForYouIndex++;
+        else currentForYouIndex = 0; 
+        loadForYouVideo();
+    }
+
+    function prevForYou() {
+        if (!dramas || dramas.length === 0) return;
+        if (currentForYouIndex > 0) currentForYouIndex--;
+        else currentForYouIndex = dramas.length - 1; 
+        loadForYouVideo();
+    }
+
+    function watchNowForYou(e) {
+        if(e) e.stopPropagation();
+        if (!dramas || dramas.length === 0) return;
+        const drama = dramas[currentForYouIndex];
+        openPlayer(drama.id);
+    }
+
+    function toggleLikeInForYou(e) {
+        if(e) e.stopPropagation();
+        const drama = dramas[currentForYouIndex];
+        if (!drama) return;
+        if (!user.likedDramas) user.likedDramas = [];
+        const icon = document.getElementById('foryou-like-icon');
+
+        if (user.likedDramas.includes(drama.id)) {
+            user.likedDramas = user.likedDramas.filter(id => id !== drama.id);
+            if (icon) {
+                icon.classList.remove('ph-fill', 'text-primary');
+                icon.classList.add('ph');
+            }
+            showToast("Removed from Liked");
+        } else {
+            user.likedDramas.push(drama.id);
+            if (icon) {
+                icon.classList.remove('ph');
+                icon.classList.add('ph-fill', 'text-primary');
+            }
+            showToast("Added to Liked Dramas");
+        }
+        syncActiveUser();
+        renderMyList();
+    }
+
+    function toggleSaveInForYou(e) {
+        if(e) e.stopPropagation();
+        const drama = dramas[currentForYouIndex];
+        if (!drama) return;
+        if (!user.savedDramas) user.savedDramas = [];
+        const icon = document.getElementById('foryou-save-icon');
+
+        if (user.savedDramas.includes(drama.id)) {
+            user.savedDramas = user.savedDramas.filter(id => id !== drama.id);
+            if(icon) {
+                icon.classList.remove('ph-fill', 'text-yellow-400');
+                icon.classList.add('ph', 'text-white');
+            }
+            showToast("Removed from My List");
+        } else {
+            user.savedDramas.push(drama.id);
+            if(icon) {
+                icon.classList.remove('ph', 'text-white');
+                icon.classList.add('ph-fill', 'text-yellow-400');
+            }
+            showToast("Saved to My List");
+        }
+        syncActiveUser();
+        renderMyList();
+    }
+
+    function shareForYou(e) {
+        if(e) e.stopPropagation();
+        const drama = dramas[currentForYouIndex];
+        if (!drama) return;
+        const shareData = {
+            title: `Watch ${drama.title} on M Sahil Flix!`,
+            text: drama.desc,
+            url: window.location.href
+        };
+        if (navigator.share) {
+            navigator.share(shareData).catch(err => console.log('Share error:', err));
+        } else {
+            const dummy = document.createElement('input');
+            document.body.appendChild(dummy);
+            dummy.value = window.location.href;
+            dummy.select();
+            document.execCommand('copy');
+            document.body.removeChild(dummy);
+            showToast('Link copied to clipboard!');
+        }
+    }
+
+    function setupForYouSwipe() {
+        const fyScreen = document.getElementById('home');
+        const videoEl = document.getElementById('foryou-video');
+        
+        if (!fyScreen || !videoEl) return;
+
+        fyScreen.addEventListener('touchstart', e => { 
+            if (e.target.closest('.overflow-x-auto') || e.target.closest('button') || e.target.closest('.nav-btn')) return;
+            
+            fyTouchStartY = e.touches[0].screenY; 
+            isFyDragging = true;
+            fyHasMoved = false;
+            videoEl.style.transition = 'none';
+        }, {passive: true});
+        
+        fyScreen.addEventListener('touchmove', e => {
+            if(!isFyDragging) return;
+            const currentY = e.touches[0].screenY;
+            const deltaY = currentY - fyTouchStartY;
+            if (Math.abs(deltaY) > 10) fyHasMoved = true;
+            videoEl.style.transform = `translateY(${deltaY * 0.4}px)`;
+        }, {passive: true});
+
+        fyScreen.addEventListener('touchend', e => {
+            if(!isFyDragging) return;
+            isFyDragging = false;
+            
+            const fyTouchEndY = e.changedTouches[0].screenY;
+            const swipeDistance = fyTouchStartY - fyTouchEndY;
+            
+            videoEl.style.transition = 'transform 0.25s cubic-bezier(0.25, 1, 0.5, 1)';
+
+            if (swipeDistance > 60) {
+                videoEl.style.transform = `translateY(-100%)`;
+                setTimeout(() => {
+                    nextForYou();
+                    videoEl.style.transition = 'none';
+                    videoEl.style.transform = `translateY(100%)`;
+                    void videoEl.offsetWidth; 
+                    videoEl.style.transition = 'transform 0.25s cubic-bezier(0.25, 1, 0.5, 1)';
+                    videoEl.style.transform = `translateY(0)`;
+                }, 250);
+            } else if (swipeDistance < -60) {
+                videoEl.style.transform = `translateY(100%)`;
+                setTimeout(() => {
+                    prevForYou();
+                    videoEl.style.transition = 'none';
+                    videoEl.style.transform = `translateY(-100%)`;
+                    void videoEl.offsetWidth; 
+                    videoEl.style.transition = 'transform 0.25s cubic-bezier(0.25, 1, 0.5, 1)';
+                    videoEl.style.transform = `translateY(0)`;
+                }, 250);
+            } else {
+                videoEl.style.transform = `translateY(0)`;
+            }
+        }, {passive: true});
+    }
+
     // --- PLAYER ACTION BUTTONS LOGIC ---
     function toggleLike() {
         if (!activeDramaId) return;
@@ -1828,7 +2439,7 @@
             url: window.location.href
         };
         
-        if (navigator.share && navigator.canShare && navigator.canShare(shareData)) {
+        if (navigator.share) {
             navigator.share(shareData).catch(err => console.log('Share error:', err));
         } else {
             const dummy = document.createElement('input');
@@ -1903,11 +2514,30 @@
         });
         
         localStorage.setItem('dramaBite_comments', JSON.stringify(allComments));
+        cloudSaveComments(allComments);
         input.value = '';
         renderComments();
     }
 
     // --- MONETIZATION & SUBSCRIPTION ---
+    function claimDailyReward() {
+        if (user.id === 'guest') {
+            showToast("Please create an account to claim daily rewards.");
+            navTo('auth');
+            return;
+        }
+        const today = new Date().toDateString();
+        if (user.lastDailyClaim === today) {
+            showToast("Already claimed today! Come back tomorrow.");
+            return;
+        }
+        user.lastDailyClaim = today;
+        user.coins += 50;
+        syncActiveUser();
+        updateUserUI();
+        showToast("Daily Rewards Claimed! +50 Coins");
+    }
+
     function unlockEpisode() {
         const drama = dramas.find(d => d.id === activeDramaId);
         if (!drama) return;
@@ -1970,13 +2600,12 @@
 
         // Razorpay One-Time Payment Flow
         const options = {
-            "key": "rzp_test_SjKEWK0QfQUfzQ", // Your Razorpay Test Key ID
-            "amount": price * 100, // Amount is in currency subunits (paise)
+            "key": "rzp_test_SjKEWK0QfQUfzQ", 
+            "amount": price * 100, 
             "currency": "INR",
             "name": "M Sahil Flix",
             "description": price >= 499 ? "Ultra Ad-Free (One-Time)" : "Premium Ad-Free (One-Time)",
             "handler": function (response) {
-                // Payment Success
                 user.isSubscribed = true;
                 user.subscriptionTier = price >= 499 ? 'ultra' : 'premium';
                 syncActiveUser();
@@ -2010,7 +2639,7 @@
     }
 
     function updateUserUI() {
-        const bals = document.querySelectorAll('#coin-balance, #lock-balance');
+        const bals = document.querySelectorAll('#coin-balance, #lock-balance, #rewards-coin-balance');
         bals.forEach(el => { if(el) el.innerText = user.coins; });
 
         const adBanner = document.getElementById('profile-ad-banner');
@@ -2307,9 +2936,10 @@
         }
     }
 
-    function saveDramasAndRefresh() {
+    async function saveDramasAndRefresh() {
         try {
             localStorage.setItem('dramaBite_dramas', JSON.stringify(dramas));
+            await cloudSaveDramas(dramas);
         } catch(e) {
             console.error("Storage Error:", e);
         }
