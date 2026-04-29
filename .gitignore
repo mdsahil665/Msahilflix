@@ -1,31 +1,2341 @@
-# Built things
-_Debug/
-Compiled/
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>M Sahil Flix - Short Drama</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <!-- Razorpay Payment SDK -->
+    <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#E11D48',
+                        darkbg: '#0F172A',
+                        darkcard: '#1E293B',
+                    },
+                    animation: {
+                        'slide-up': 'slideUp 0.3s ease-out',
+                        'fade-in': 'fadeIn 0.2s ease-out',
+                        'spin-slow': 'spin 1.5s linear infinite',
+                    },
+                    keyframes: {
+                        slideUp: {
+                            '0%': { transform: 'translateY(100%)' },
+                            '100%': { transform: 'translateY(0)' },
+                        },
+                        fadeIn: {
+                            '0%': { opacity: '0' },
+                            '100%': { opacity: '1' },
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            background-color: #000;
+            color: #fff;
+            -webkit-tap-highlight-color: transparent;
+            overflow: hidden;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        }
+        .hide-scroll::-webkit-scrollbar { display: none; }
+        .hide-scroll { -ms-overflow-style: none; scrollbar-width: none; }
+        .app-container {
+            max-width: 480px;
+            margin: 0 auto;
+            background-color: #0F172A;
+            height: 100vh;
+            height: 100dvh;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 0 20px rgba(0,0,0,0.5);
+        }
+        .screen {
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            overflow-y: auto;
+            background-color: #0F172A;
+            display: none;
+        }
+        .screen.active { display: block; }
+        .bottom-nav { padding-bottom: env(safe-area-inset-bottom); }
+        .glass-panel {
+            background: rgba(15, 23, 42, 0.7);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+        }
+        input[type="range"] {
+            -webkit-appearance: none;
+            background: rgba(255, 255, 255, 0.2);
+            height: 4px;
+            border-radius: 2px;
+            cursor: pointer;
+        }
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 12px;
+            height: 12px;
+            background: #E11D48;
+            border-radius: 50%;
+        }
+        .spinner-loader {
+            border: 3px solid rgba(255,255,255,0.2);
+            border-top-color: #E11D48;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+        }
+    </style>
+</head>
+<body>
 
-# AudioCache can be rebuilt from sources
-AudioCache/
+<div id="app" class="app-container">
 
-# Lockfile
-_OpenInEditor.lock
+    <!-- Toast Notification -->
+    <div id="toast" class="fixed top-4 left-1/2 -translate-x-1/2 bg-darkcard text-white px-4 py-2 rounded-full text-sm font-medium shadow-lg z-[200] transition-all duration-300 opacity-0 pointer-events-none translate-y-[-20px] max-w-[90%] text-center border border-slate-700">
+        Notification
+    </div>
 
-# User settings
-Game.agf.user
-*.crm.user
+    <!-- 1. SPLASH SCREEN -->
+    <div id="splash" class="fixed inset-0 flex flex-col items-center justify-center bg-darkbg z-[100] max-w-[480px] mx-auto transition-opacity duration-300">
+        <div class="text-primary text-6xl mb-4 animate-bounce">
+            <i class="ph-fill ph-play-circle"></i>
+        </div>
+        <h1 class="text-4xl font-bold text-white tracking-tight">M Sahil Flix</h1>
+        <p class="text-slate-400 mt-2">Bite-sized stories, epic emotions.</p>
+        
+        <button onclick="dismissSplash()" class="mt-12 px-8 py-3 bg-darkcard border border-slate-700 hover:border-primary text-slate-300 hover:text-white rounded-full text-sm font-bold transition-all flex items-center gap-2 cursor-pointer active:scale-95 shadow-lg">
+            ENTER APP <i class="ph ph-arrow-right"></i>
+        </button>
+    </div>
 
-# Backups
-Game.agf.bak
-backup_acsprset.spr
+    <!-- 6. AUTH SCREEN -->
+    <div id="auth" class="screen p-6 flex flex-col justify-center" style="display:none;">
+        <div class="text-center mb-8">
+            <div class="text-primary text-6xl mb-4">
+                <i class="ph-fill ph-play-circle"></i>
+            </div>
+            <h2 class="text-3xl font-bold text-white mb-2" id="auth-title">Welcome Back</h2>
+            <p class="text-slate-400" id="auth-subtitle">Sign in to continue watching</p>
+        </div>
 
-# Memory dumps
-*.dmp
+        <div class="flex p-1 bg-darkbg rounded-xl mb-6 border border-slate-700">
+            <button onclick="toggleAuth('login')" id="tab-login" class="flex-1 py-2 rounded-lg bg-darkcard text-white font-bold transition-all shadow-sm">Log In</button>
+            <button onclick="toggleAuth('signup')" id="tab-signup" class="flex-1 py-2 rounded-lg text-slate-400 font-bold hover:text-white transition-all">Sign Up</button>
+        </div>
 
-# Temporary files
-# temporarily created during sprite or room background compression
-~aclzw.tmp
-# temporary, main game data, before getting packed into exe
-game28.dta
-# temporary build of the game before being moved to Compiled/ folder
-*.exe
+        <div id="form-login" class="space-y-4 animate-fade-in">
+            <input type="text" id="login-username" placeholder="Email, Mobile, or Username" class="w-full bg-darkbg text-white px-4 py-3 rounded-xl border border-slate-700 focus:outline-none focus:border-primary transition-colors">
+            <input type="password" id="login-password" placeholder="Password" class="w-full bg-darkbg text-white px-4 py-3 rounded-xl border border-slate-700 focus:outline-none focus:border-primary transition-colors">
+            <button onclick="login()" class="w-full bg-primary hover:bg-rose-700 text-white font-bold py-3.5 rounded-xl transition-colors active:scale-95 shadow-lg shadow-rose-900/20 mt-2">Log In</button>
+        </div>
 
-# Log files
-warnings.log
+        <div id="form-signup" class="space-y-4 hidden animate-fade-in">
+            <input type="text" id="signup-name" placeholder="Full Name" class="w-full bg-darkbg text-white px-4 py-3 rounded-xl border border-slate-700 focus:outline-none focus:border-primary transition-colors">
+            <input type="text" id="signup-username" placeholder="Email or Mobile" class="w-full bg-darkbg text-white px-4 py-3 rounded-xl border border-slate-700 focus:outline-none focus:border-primary transition-colors">
+            <input type="password" id="signup-password" placeholder="Password" class="w-full bg-darkbg text-white px-4 py-3 rounded-xl border border-slate-700 focus:outline-none focus:border-primary transition-colors">
+            <input type="password" id="signup-confirm" placeholder="Confirm Password" class="w-full bg-darkbg text-white px-4 py-3 rounded-xl border border-slate-700 focus:outline-none focus:border-primary transition-colors">
+            <button onclick="signup()" class="w-full bg-primary hover:bg-rose-700 text-white font-bold py-3.5 rounded-xl transition-colors active:scale-95 shadow-lg shadow-rose-900/20 mt-2">Create Account</button>
+        </div>
+
+        <button onclick="guestLogin()" class="mt-8 text-slate-400 hover:text-white text-sm w-full text-center transition-colors">Continue as Guest</button>
+    </div>
+
+    <!-- 2. HOME SCREEN -->
+    <div id="home" class="screen pb-20 hide-scroll" style="display:none;">
+        <div class="absolute top-0 w-full p-4 flex justify-between items-center z-10 glass-panel">
+            <h1 class="text-xl font-bold text-primary">M Sahil Flix</h1>
+            <div class="flex gap-3 text-xl">
+                <i class="ph ph-magnifying-glass cursor-pointer hover:text-primary transition-colors" onclick="navTo('search')"></i>
+                <i class="ph ph-bell cursor-pointer hover:text-primary transition-colors" onclick="showToast('No new notifications')"></i>
+            </div>
+        </div>
+
+        <div id="featured-container" class="relative h-[60vh] w-full bg-slate-800"></div>
+
+        <div class="px-4 mt-6">
+            <div class="flex gap-3 overflow-x-auto hide-scroll pb-2">
+                <button class="px-4 py-1.5 bg-primary text-white rounded-full text-sm font-medium whitespace-nowrap">For You</button>
+                <button class="px-4 py-1.5 bg-darkcard text-slate-300 rounded-full text-sm font-medium whitespace-nowrap border border-slate-700">CEO & Romance</button>
+                <button class="px-4 py-1.5 bg-darkcard text-slate-300 rounded-full text-sm font-medium whitespace-nowrap border border-slate-700">Revenge</button>
+                <button class="px-4 py-1.5 bg-darkcard text-slate-300 rounded-full text-sm font-medium whitespace-nowrap border border-slate-700">Vampire</button>
+            </div>
+        </div>
+
+        <div class="mt-6 px-4">
+            <h2 class="text-lg font-bold mb-3">Trending Now</h2>
+            <div id="trending-container" class="flex gap-3 overflow-x-auto hide-scroll pb-4 snap-x"></div>
+        </div>
+
+        <div class="mt-2 px-4 mb-6">
+            <h2 class="text-lg font-bold mb-3">Continue Watching</h2>
+            <div id="continue-container" class="flex gap-3 overflow-x-auto hide-scroll pb-4 snap-x"></div>
+        </div>
+    </div>
+
+    <!-- 3. SEARCH SCREEN -->
+    <div id="search" class="screen pb-20 pt-16 px-4" style="display:none;">
+        <div class="absolute top-0 left-0 w-full p-4 glass-panel flex items-center gap-3 z-10">
+            <i class="ph ph-caret-left text-2xl cursor-pointer hover:text-primary" onclick="navTo('home')"></i>
+            <div class="relative flex-1">
+                <i class="ph ph-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"></i>
+                <input type="text" placeholder="Search dramas..." class="w-full bg-darkcard text-white py-2 pl-10 pr-4 rounded-full text-sm focus:outline-none focus:ring-1 focus:ring-primary border border-slate-700">
+            </div>
+        </div>
+        <h2 class="text-sm font-bold text-slate-400 mt-4 mb-3 uppercase tracking-wider">Recommended</h2>
+        <div class="flex flex-wrap gap-2 mb-6">
+            <span class="px-3 py-1 bg-darkcard rounded-full text-sm text-slate-300 cursor-pointer hover:bg-slate-700" onclick="showToast('Searching...')">Billionaire</span>
+            <span class="px-3 py-1 bg-darkcard rounded-full text-sm text-slate-300 cursor-pointer hover:bg-slate-700" onclick="showToast('Searching...')">Fake Marriage</span>
+            <span class="px-3 py-1 bg-darkcard rounded-full text-sm text-slate-300 cursor-pointer hover:bg-slate-700" onclick="showToast('Searching...')">Betrayal</span>
+        </div>
+        <h2 class="text-lg font-bold mb-3">Browse All</h2>
+        <div id="browse-container" class="grid grid-cols-2 gap-3"></div>
+    </div>
+
+    <!-- 8. MY LIST SCREEN -->
+    <div id="mylist" class="screen pb-20 hide-scroll" style="display:none;">
+        <div class="absolute top-0 w-full p-4 flex justify-between items-center z-10 glass-panel">
+            <h1 class="text-xl font-bold text-primary">My List</h1>
+        </div>
+        <div class="px-4 pt-20">
+            <h2 class="text-lg font-bold mb-3 text-white">Continue Watching</h2>
+            <div id="mylist-history-container" class="flex gap-3 overflow-x-auto hide-scroll pb-4 snap-x">
+                <!-- JS Populated -->
+            </div>
+            <h2 class="text-lg font-bold mb-3 mt-4 text-white">Saved Dramas</h2>
+            <div id="mylist-saved-container" class="grid grid-cols-2 gap-3 pb-8">
+                <!-- JS Populated -->
+            </div>
+        </div>
+    </div>
+
+    <!-- 4. PROFILE SCREEN -->
+    <div id="profile" class="screen pb-20 hide-scroll" style="display:none;">
+        <div class="bg-darkcard pt-12 pb-6 px-4 rounded-b-3xl relative border-b border-slate-700">
+            <div class="flex items-center gap-4">
+                <div class="w-16 h-16 bg-gradient-to-tr from-primary to-orange-500 rounded-full flex items-center justify-center text-2xl font-bold shadow-lg" id="profile-avatar">
+                    U
+                </div>
+                <div>
+                    <h2 class="text-xl font-bold flex items-center gap-2 flex-wrap">
+                        <span id="profile-name">Guest_8921</span>
+                        <span id="profile-badge-container"></span>
+                    </h2>
+                    <p class="text-sm text-slate-400" id="profile-id">ID: 10089214</p>
+                </div>
+            </div>
+            
+            <div class="mt-6 flex bg-darkbg rounded-2xl p-4 border border-slate-700 items-center justify-between shadow-inner">
+                <div class="flex items-center gap-3">
+                    <i class="ph-fill ph-coin text-yellow-500 text-3xl"></i>
+                    <div>
+                        <p class="text-xs text-slate-400">My Coins</p>
+                        <p class="text-xl font-bold" id="coin-balance">500</p>
+                    </div>
+                </div>
+                <button onclick="showCoinModal()" class="bg-primary hover:bg-rose-700 text-white px-5 py-2.5 rounded-xl font-bold text-sm transition-colors active:scale-95 shadow-lg">Top Up</button>
+            </div>
+
+            <!-- AD REMOVAL BANNER -->
+            <div id="profile-ad-banner" class="mt-4 bg-gradient-to-r from-purple-900/40 to-indigo-900/40 border border-purple-500/30 hover:border-purple-500/60 rounded-2xl p-4 flex items-center justify-between cursor-pointer transition-colors active:scale-95 shadow-lg" onclick="showSubscriptionModal()">
+                <div class="flex items-center gap-3">
+                    <i class="ph-fill ph-crown text-3xl text-yellow-400 drop-shadow-md"></i>
+                    <div>
+                        <p class="font-bold text-white text-sm">Remove Ads</p>
+                        <p class="text-[10px] text-purple-300">Upgrade to Premium Ad-Free</p>
+                    </div>
+                </div>
+                <i class="ph ph-caret-right text-slate-400"></i>
+            </div>
+        </div>
+
+        <div class="px-4 mt-6 space-y-4">
+            <!-- Top: Watch History -->
+            <div class="bg-darkcard rounded-2xl overflow-hidden border border-slate-700 shadow-md">
+                <div class="flex items-center justify-between p-4 cursor-pointer hover:bg-slate-700 transition-colors" onclick="navTo('mylist'); showToast('Opened Viewing History')">
+                    <div class="flex items-center gap-3"><i class="ph ph-clock-counter-clockwise text-xl text-primary"></i> <span class="font-bold text-white">Watch History</span></div>
+                    <i class="ph ph-caret-right text-slate-400"></i>
+                </div>
+            </div>
+
+            <!-- Menu Options -->
+            <div class="bg-darkcard rounded-2xl overflow-hidden border border-slate-700 shadow-md">
+                <div class="flex items-center justify-between p-4 border-b border-slate-700 cursor-pointer hover:bg-slate-700 transition-colors" onclick="navTo('settings')">
+                    <div class="flex items-center gap-3"><i class="ph ph-gear text-xl text-slate-400"></i> Settings</div>
+                    <i class="ph ph-caret-right text-slate-400"></i>
+                </div>
+                <div class="flex items-center justify-between p-4 border-b border-slate-700 cursor-pointer hover:bg-slate-700 transition-colors" onclick="showToast('Support: support@msahilflix.com')">
+                    <div class="flex items-center gap-3"><i class="ph ph-question text-xl text-slate-400"></i> Help & Support</div>
+                    <i class="ph ph-caret-right text-slate-400"></i>
+                </div>
+                <div class="flex items-center justify-between p-4 border-b border-slate-700 cursor-pointer hover:bg-slate-700 transition-colors" onclick="showToast('Legal Policies opened')">
+                    <div class="flex items-center gap-3"><i class="ph ph-shield-check text-xl text-slate-400"></i> Legal Policies</div>
+                    <i class="ph ph-caret-right text-slate-400"></i>
+                </div>
+                <div class="flex items-center justify-between p-4 border-b border-slate-700 cursor-pointer hover:bg-slate-700 transition-colors" onclick="showToast('Thank you for rating us!')">
+                    <div class="flex items-center gap-3"><i class="ph ph-star text-xl text-slate-400"></i> Rate Us</div>
+                    <i class="ph ph-caret-right text-slate-400"></i>
+                </div>
+                
+                <!-- This is dynamically hidden/shown based on Role -->
+                <div id="profile-admin-btn" class="flex items-center justify-between p-4 cursor-pointer hover:bg-slate-700 transition-colors text-primary font-bold" onclick="navTo('admin')" style="display:none;">
+                    <div class="flex items-center gap-3"><i class="ph ph-wrench text-xl"></i> Admin Dashboard</div>
+                    <i class="ph ph-caret-right"></i>
+                </div>
+            </div>
+            
+            <button onclick="logout()" class="w-full p-4 mt-4 text-slate-400 font-bold border border-slate-700 rounded-2xl hover:bg-slate-800 hover:text-white transition-colors">Log Out</button>
+        </div>
+    </div>
+
+    <!-- 9. SETTINGS SCREEN -->
+    <div id="settings" class="screen pb-20 hide-scroll" style="display:none;">
+        <div class="p-4 border-b border-slate-800 flex items-center gap-3 glass-panel sticky top-0 z-10">
+            <i class="ph ph-caret-left text-2xl cursor-pointer hover:text-primary" onclick="navTo('profile')"></i>
+            <h2 class="text-lg font-bold">Settings</h2>
+        </div>
+        <div class="p-4 space-y-4">
+            <!-- Personal -->
+            <div class="bg-darkcard rounded-2xl overflow-hidden border border-slate-700" onclick="openSettingsDetail('personal')">
+                <div class="flex items-center justify-between p-4 cursor-pointer hover:bg-slate-700 transition-colors">
+                    <div class="flex items-center gap-3"><i class="ph-fill ph-user-circle text-xl text-blue-400"></i> <span>Personal Details</span></div>
+                    <i class="ph ph-caret-right text-slate-500"></i>
+                </div>
+            </div>
+            <!-- Languages -->
+            <div class="bg-darkcard rounded-2xl overflow-hidden border border-slate-700" onclick="openSettingsDetail('language')">
+                <div class="flex items-center justify-between p-4 cursor-pointer hover:bg-slate-700 transition-colors">
+                    <div class="flex items-center gap-3"><i class="ph-fill ph-translate text-xl text-orange-400"></i> <span>Content & Languages</span></div>
+                    <div class="flex items-center gap-1 text-slate-400 text-sm"><span id="settings-lang-status">English</span> <i class="ph ph-caret-right"></i></div>
+                </div>
+            </div>
+            <!-- Parental Lock -->
+            <div class="bg-darkcard rounded-2xl overflow-hidden border border-slate-700" onclick="openSettingsDetail('parental')">
+                <div class="flex items-center justify-between p-4 cursor-pointer hover:bg-slate-700 transition-colors">
+                    <div class="flex items-center gap-3"><i class="ph-fill ph-shield-check text-xl text-green-400"></i> <span>Parental Lock</span></div>
+                    <div id="parental-status" class="text-slate-400 text-sm">Off <i class="ph ph-caret-right"></i></div>
+                </div>
+            </div>
+            <!-- Subscription -->
+            <div class="bg-darkcard rounded-2xl overflow-hidden border border-slate-700" onclick="openSettingsDetail('subscription')">
+                <div class="flex items-center justify-between p-4 cursor-pointer hover:bg-slate-700 transition-colors">
+                    <div class="flex items-center gap-3"><i class="ph-fill ph-crown text-xl text-yellow-400"></i> <span>Subscription</span></div>
+                    <div id="settings-sub-status" class="px-2 py-0.5 rounded text-[10px] font-bold">INACTIVE</div>
+                </div>
+            </div>
+            <!-- Player Settings -->
+            <div class="bg-darkcard rounded-2xl overflow-hidden border border-slate-700" onclick="openSettingsDetail('player')">
+                <div class="flex items-center justify-between p-4 cursor-pointer hover:bg-slate-700 transition-colors">
+                    <div class="flex items-center gap-3"><i class="ph-fill ph-video text-xl text-purple-400"></i> <span>Player & Video Settings</span></div>
+                    <i class="ph ph-caret-right text-slate-500"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- SETTINGS DETAIL MODAL -->
+    <div id="settings-detail-modal" class="fixed inset-0 z-[150] hidden flex-col bg-darkbg max-w-[480px] mx-auto animate-slide-up">
+        <div class="p-4 border-b border-slate-800 flex items-center justify-between glass-panel">
+            <div class="flex items-center gap-3">
+                <i class="ph ph-caret-left text-2xl cursor-pointer hover:text-primary transition-colors" onclick="closeSettingsDetail()"></i>
+                <h2 id="settings-detail-title" class="text-lg font-bold">Detail</h2>
+            </div>
+            <button id="settings-save-btn" class="text-primary font-bold hidden px-3 py-1 bg-primary/20 rounded-lg hover:bg-primary/30 transition-colors">Save</button>
+        </div>
+        <div id="settings-detail-content" class="p-6 overflow-y-auto hide-scroll pb-24"></div>
+    </div>
+
+    <!-- 5. ADMIN SCREEN -->
+    <div id="admin" class="screen pb-20 hide-scroll" style="display:none;">
+        <div class="p-4 border-b border-slate-800 flex items-center gap-3 glass-panel sticky top-0 z-10">
+            <i class="ph ph-caret-left text-2xl cursor-pointer hover:text-primary" onclick="navTo('profile')"></i>
+            <h2 class="text-lg font-bold">Admin Dashboard</h2>
+        </div>
+        <div class="p-4 space-y-6">
+            
+            <!-- SECTION 1: CREATE NEW SERIES -->
+            <div class="bg-darkcard p-4 rounded-2xl border border-slate-700 shadow-lg">
+                <h3 class="text-primary font-bold mb-4 flex items-center gap-2"><i class="ph-fill ph-film-strip"></i> 1. Create New Series</h3>
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm text-slate-400 mb-1">Series Title</label>
+                        <input type="text" id="admin-title" placeholder="e.g., Return of the King" class="w-full bg-darkbg text-white px-4 py-3 rounded-xl border border-slate-600 focus:outline-none focus:border-primary">
+                    </div>
+                    <div>
+                        <label class="block text-sm text-slate-400 mb-1">Description</label>
+                        <textarea id="admin-desc" placeholder="Story details..." rows="2" class="w-full bg-darkbg text-white px-4 py-3 rounded-xl border border-slate-600 focus:outline-none focus:border-primary"></textarea>
+                    </div>
+                    <div>
+                        <label class="block text-sm text-slate-400 mb-1">Cover Image URL</label>
+                        <input type="text" id="admin-cover" placeholder="Cover Image URL (unsplash etc)" class="w-full bg-darkbg text-white px-4 py-3 rounded-xl border border-slate-600 focus:outline-none focus:border-primary">
+                    </div>
+                    <div>
+                        <label class="block text-sm text-slate-400 mb-1">Category</label>
+                        <select id="admin-cat" class="w-full bg-darkbg text-white px-4 py-3 rounded-xl border border-slate-600 focus:outline-none focus:border-primary">
+                            <option value="Romance">Romance</option>
+                            <option value="Revenge">Revenge</option>
+                            <option value="Comedy">Comedy</option>
+                            <option value="Thriller">Thriller</option>
+                        </select>
+                    </div>
+                    <button onclick="adminCreateSeries()" class="w-full bg-primary hover:bg-rose-700 text-white font-bold py-3.5 rounded-xl shadow-lg active:scale-95 transition-all">Create Empty Series</button>
+                </div>
+            </div>
+
+            <!-- SECTION 2: ADD EPISODE TO EXISTING SERIES -->
+            <div class="bg-darkcard p-4 rounded-2xl border border-slate-700 shadow-lg">
+                <h3 class="text-primary font-bold mb-4 flex items-center gap-2"><i class="ph-fill ph-video-camera"></i> 2. Add Episode To Series</h3>
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm text-slate-400 mb-1">Select Existing Series</label>
+                        <select id="admin-series-select" class="w-full bg-darkbg text-white px-4 py-3 rounded-xl border border-slate-600 focus:outline-none focus:border-primary"></select>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm text-slate-400 mb-2">Video Source</label>
+                        <div class="flex gap-4 mb-2">
+                            <label class="flex items-center gap-2 cursor-pointer">
+                                <input type="radio" name="upload-method" value="device" checked onchange="toggleUploadMethod()" class="accent-primary">
+                                <span class="text-sm text-white">Upload from Device</span>
+                            </label>
+                            <label class="flex items-center gap-2 cursor-pointer">
+                                <input type="radio" name="upload-method" value="url" onchange="toggleUploadMethod()" class="accent-primary">
+                                <span class="text-sm text-white">Add Video URL</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div id="method-device">
+                        <label class="block text-sm text-slate-400 mb-1">Upload MP4 Video</label>
+                        <input type="file" id="admin-video-file" accept="video/mp4,video/*" class="w-full bg-darkbg text-white px-4 py-3 rounded-xl border border-slate-600 focus:outline-none focus:border-primary">
+                    </div>
+
+                    <div id="method-url" style="display:none;">
+                        <label class="block text-sm text-slate-400 mb-1">Paste Video URL (MP4)</label>
+                        <input type="text" id="admin-video-url" placeholder="https://example.com/video.mp4" class="w-full bg-darkbg text-white px-4 py-3 rounded-xl border border-slate-600 focus:outline-none focus:border-primary">
+                    </div>
+
+                    <div>
+                        <label class="block text-sm text-slate-400 mb-1">Episode Cost (0 = Free)</label>
+                        <input type="number" id="admin-ep-cost" placeholder="e.g. 50" value="50" class="w-full bg-darkbg text-white px-4 py-3 rounded-xl border border-slate-600 focus:outline-none focus:border-primary">
+                    </div>
+                    <button onclick="adminAddEpisode()" class="w-full bg-purple-600 hover:bg-purple-700 text-white font-bold py-3.5 rounded-xl shadow-lg active:scale-95 transition-all">Upload & Save Episode</button>
+                </div>
+            </div>
+
+            <!-- SECTION 3: MANAGE EPISODES -->
+            <div class="bg-darkcard p-4 rounded-2xl border border-slate-700 shadow-lg">
+                <h3 class="text-primary font-bold mb-4 flex items-center gap-2"><i class="ph-fill ph-list"></i> 3. Manage Episodes</h3>
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm text-slate-400 mb-1">Select Series</label>
+                        <select id="admin-manage-series-select" onchange="renderManageEpisodes()" class="w-full bg-darkbg text-white px-4 py-3 rounded-xl border border-slate-600 focus:outline-none focus:border-primary"></select>
+                    </div>
+                    <div id="admin-episodes-list" class="space-y-2 mt-4 max-h-60 overflow-y-auto hide-scroll"></div>
+                </div>
+            </div>
+
+            <!-- SECTION 4: AD SETTINGS -->
+            <div class="bg-darkcard p-4 rounded-2xl border border-slate-700 shadow-lg">
+                <h3 class="text-primary font-bold mb-4 flex items-center gap-2"><i class="ph-fill ph-monitor-play"></i> 4. Ad Settings</h3>
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm text-slate-400 mb-1">Ad Frequency (Episodes between ads)</label>
+                        <input type="number" id="admin-ad-freq" placeholder="e.g. 4" class="w-full bg-darkbg text-white px-4 py-3 rounded-xl border border-slate-600 focus:outline-none focus:border-primary">
+                    </div>
+                    <button onclick="saveAdSettings()" class="w-full bg-slate-700 hover:bg-slate-600 text-white font-bold py-3.5 rounded-xl shadow-lg active:scale-95 transition-all">Save Ad Frequency</button>
+                </div>
+            </div>
+
+            <!-- SECTION 5: ADMIN SETTINGS -->
+            <div class="bg-darkcard p-4 rounded-2xl border border-slate-700 shadow-lg">
+                <h3 class="text-primary font-bold mb-4 flex items-center gap-2"><i class="ph-fill ph-lock-key"></i> 5. Security Settings</h3>
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm text-slate-400 mb-1">Change Admin Password</label>
+                        <input type="password" id="admin-new-pass" placeholder="Enter new password" class="w-full bg-darkbg text-white px-4 py-3 rounded-xl border border-slate-600 focus:outline-none focus:border-primary">
+                    </div>
+                    <button onclick="changeAdminPassword()" class="w-full bg-slate-700 hover:bg-slate-600 text-white font-bold py-3.5 rounded-xl shadow-lg active:scale-95 transition-all">Update Password</button>
+                </div>
+            </div>
+            
+            <button onclick="clearLocalStorageData()" class="w-full mt-6 bg-rose-900/50 text-rose-300 font-bold py-3.5 rounded-xl border border-rose-900 hover:text-white transition-all shadow-md">Clear All Custom Content</button>
+        </div>
+    </div>
+
+    <!-- 7. VIDEO PLAYER SCREEN -->
+    <div id="player" class="screen bg-black z-50 overflow-hidden" style="display:none;">
+        <div class="absolute inset-0" id="video-container" onclick="togglePlay()">
+            <video id="main-video" class="w-full h-full object-cover" playsinline autoplay preload="auto"></video>
+            
+            <!-- Buffering Indicator -->
+            <div id="buffering-indicator" class="absolute inset-0 flex items-center justify-center pointer-events-none hidden z-10">
+                <div class="spinner-loader"></div>
+            </div>
+
+            <div id="pause-indicator" class="absolute inset-0 flex items-center justify-center pointer-events-none hidden z-10">
+                <div class="w-20 h-20 bg-black/50 rounded-full flex items-center justify-center backdrop-blur-sm">
+                    <i class="ph-fill ph-play text-4xl text-white"></i>
+                </div>
+            </div>
+        </div>
+
+        <!-- Lock Overlay -->
+        <div id="lock-overlay" class="absolute inset-0 bg-black/80 backdrop-blur-md flex flex-col items-center justify-center px-6 hidden z-20">
+            <div class="w-20 h-20 bg-darkcard rounded-full flex items-center justify-center mb-6 shadow-2xl border border-slate-700">
+                <i class="ph-fill ph-lock-key text-4xl text-primary"></i>
+            </div>
+            <h3 class="text-2xl font-bold mb-2">Episode Locked</h3>
+            <p class="text-slate-300 text-center text-sm mb-8">Unlock <span id="lock-ep-title" class="font-bold text-white"></span> to continue the story.</p>
+            
+            <div class="w-full max-w-xs space-y-3">
+                <button onclick="unlockEpisode()" class="w-full py-3.5 bg-primary hover:bg-rose-700 rounded-xl font-bold flex justify-center items-center gap-2 transition-colors active:scale-95">
+                    <i class="ph-fill ph-lock-open"></i> Unlock (<span id="lock-cost"></span> Coins)
+                </button>
+                <button onclick="simulateAdWatch('unlock')" class="w-full py-3.5 bg-darkcard border border-slate-700 hover:bg-slate-700 rounded-xl font-bold flex justify-center items-center gap-2 text-slate-300 transition-colors active:scale-95">
+                    <i class="ph-fill ph-play-circle"></i> Watch Ad to Unlock
+                </button>
+            </div>
+            <p class="mt-6 text-sm text-slate-400">Balance: <i class="ph-fill ph-coin text-yellow-500"></i> <span id="lock-balance" class="font-bold text-white"></span></p>
+        </div>
+
+        <!-- Top Controls -->
+        <div class="absolute top-0 w-full p-4 flex items-center justify-between z-30 bg-gradient-to-b from-black/80 to-transparent pt-safe pointer-events-none">
+            <button onclick="closePlayer()" class="w-10 h-10 bg-black/40 rounded-full flex items-center justify-center backdrop-blur-sm border border-white/10 pointer-events-auto hover:bg-black/60">
+                <i class="ph ph-caret-left text-xl"></i>
+            </button>
+            <div class="text-center drop-shadow-md">
+                <p class="text-xs text-slate-300 font-bold">M Sahil Flix Original</p>
+            </div>
+            <div class="flex gap-2 pointer-events-auto">
+                <button class="w-10 h-10 bg-black/40 rounded-full flex items-center justify-center backdrop-blur-sm border border-white/10 hover:bg-black/60" onclick="toggleQualityMenu(event)">
+                    <i class="ph-fill ph-gear text-xl"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- Quality Menu Modal -->
+        <div id="quality-menu" class="absolute top-16 right-4 bg-darkcard/95 backdrop-blur-xl border border-slate-700 rounded-xl p-2 hidden z-40 w-32 shadow-2xl">
+            <h4 class="text-[10px] text-slate-400 font-bold mb-2 px-2 tracking-wider">QUALITY</h4>
+            <div class="space-y-1">
+                <button onclick="setQuality('auto')" id="q-auto" class="w-full text-left px-3 py-2 text-sm text-primary font-bold rounded-lg hover:bg-slate-700/50 transition-colors">Auto</button>
+                <button onclick="setQuality('1080p')" id="q-1080p" class="w-full text-left px-3 py-2 text-sm text-white rounded-lg hover:bg-slate-700/50 transition-colors">1080p</button>
+                <button onclick="setQuality('720p')" id="q-720p" class="w-full text-left px-3 py-2 text-sm text-white rounded-lg hover:bg-slate-700/50 transition-colors">720p</button>
+                <button onclick="setQuality('480p')" id="q-480p" class="w-full text-left px-3 py-2 text-sm text-white rounded-lg hover:bg-slate-700/50 transition-colors">480p</button>
+            </div>
+        </div>
+
+        <!-- Right Side Actions -->
+        <div class="absolute right-3 bottom-24 flex flex-col gap-4 items-center z-30">
+            <div class="flex flex-col items-center gap-1 cursor-pointer" onclick="toggleLike()">
+                <div class="w-11 h-11 bg-black/40 rounded-full flex items-center justify-center backdrop-blur-sm border border-white/10 transition hover:bg-black/60">
+                    <i id="player-like-icon" class="ph-fill ph-heart text-2xl text-white transition"></i>
+                </div>
+                <span class="text-[10px] font-bold drop-shadow-md" id="player-like-count">24.5K</span>
+            </div>
+            <div class="flex flex-col items-center gap-1 cursor-pointer" onclick="openCommentsSheet()">
+                <div class="w-11 h-11 bg-black/40 rounded-full flex items-center justify-center backdrop-blur-sm border border-white/10 hover:bg-black/60">
+                    <i class="ph-fill ph-chat-circle-dots text-2xl text-white"></i>
+                </div>
+                <span class="text-[10px] font-bold drop-shadow-md" id="player-comment-count">0</span>
+            </div>
+            <div class="flex flex-col items-center gap-1 cursor-pointer" onclick="toggleSave()">
+                <div class="w-11 h-11 bg-black/40 rounded-full flex items-center justify-center backdrop-blur-sm border border-white/10 transition hover:bg-black/60">
+                    <i id="player-save-icon" class="ph-fill ph-star text-2xl text-white transition"></i>
+                </div>
+                <span class="text-[10px] font-bold drop-shadow-md">Save</span>
+            </div>
+            <div class="flex flex-col items-center gap-1 cursor-pointer" onclick="shareDrama()">
+                <div class="w-11 h-11 bg-black/40 rounded-full flex items-center justify-center backdrop-blur-sm border border-white/10 hover:bg-black/60">
+                    <i class="ph-fill ph-share-network text-2xl text-white"></i>
+                </div>
+                <span class="text-[10px] font-bold drop-shadow-md">Share</span>
+            </div>
+            <div class="flex flex-col items-center gap-1 mt-2 cursor-pointer" onclick="openEpisodesSheet()">
+                <div class="w-12 h-12 bg-primary rounded-full flex items-center justify-center shadow-[0_0_15px_rgba(225,29,72,0.5)] border-2 border-white/20 animate-pulse hover:scale-105 transition-transform">
+                    <i class="ph-fill ph-list-dashes text-2xl text-white"></i>
+                </div>
+                <span class="text-[10px] font-bold drop-shadow-md">Episodes</span>
+            </div>
+        </div>
+
+        <!-- Bottom Info & Progress -->
+        <div class="absolute bottom-0 w-full z-30 bg-gradient-to-t from-black via-black/80 to-transparent pt-10 pb-6 px-4 pointer-events-none">
+            <div class="flex items-center justify-between mb-2 pointer-events-auto">
+                <div class="flex items-center gap-2">
+                    <span class="bg-primary text-[10px] font-bold px-2 py-0.5 rounded uppercase tracking-wider" id="player-ep-badge">EP 1</span>
+                    <span class="font-bold text-sm drop-shadow-md" id="player-ep-title">The Setup</span>
+                </div>
+                <div class="flex items-center gap-2">
+                    <button onclick="prevEpisode(event)" class="w-8 h-8 bg-black/60 rounded-full flex items-center justify-center backdrop-blur-sm border border-white/20 hover:bg-primary/80 transition-colors active:scale-95">
+                        <i class="ph-fill ph-skip-back text-sm"></i>
+                    </button>
+                    <button onclick="nextEpisode(event)" class="w-8 h-8 bg-black/60 rounded-full flex items-center justify-center backdrop-blur-sm border border-white/20 hover:bg-primary/80 transition-colors active:scale-95">
+                        <i class="ph-fill ph-skip-forward text-sm"></i>
+                    </button>
+                </div>
+            </div>
+
+            <h2 class="font-bold text-lg leading-tight mb-1 drop-shadow-md w-[80%]" id="player-drama-title">Drama Title</h2>
+            <p class="text-xs text-slate-300 drop-shadow-md line-clamp-2 w-[80%] mb-4" id="player-drama-desc">Description</p>
+            
+            <div class="flex items-center gap-2 pointer-events-auto relative z-40">
+                <span class="text-[10px] text-slate-300 w-8" id="time-current">0:00</span>
+                <input type="range" id="progress-bar" class="flex-1 h-1 cursor-pointer" value="0" min="0" max="100">
+                <span class="text-[10px] text-slate-300 w-8 text-right" id="time-total">0:00</span>
+            </div>
+        </div>
+
+        <div class="absolute top-20 left-0 w-full h-1/4 z-10" id="swipe-up-area"></div>
+        <div class="absolute bottom-32 left-0 w-full h-1/4 z-10" id="swipe-down-area"></div>
+    </div>
+
+    <!-- Modals & Sheets -->
+    <div id="episodes-sheet" class="absolute inset-0 z-[60] hidden flex-col justify-end">
+        <div class="absolute inset-0 bg-black/60 backdrop-blur-sm cursor-pointer" onclick="closeEpisodesSheet()"></div>
+        <div class="bg-darkcard rounded-t-3xl h-[65vh] relative z-10 flex flex-col animate-slide-up shadow-[0_-10px_40px_rgba(0,0,0,0.5)] border-t border-slate-700">
+            <div class="flex justify-between items-center p-5 border-b border-slate-700">
+                <div>
+                    <h3 class="font-bold text-lg">Episodes</h3>
+                    <p class="text-xs text-slate-400" id="sheet-ep-count">0 Episodes</p>
+                </div>
+                <button onclick="closeEpisodesSheet()" class="w-8 h-8 bg-slate-800 hover:bg-slate-700 rounded-full flex items-center justify-center text-slate-400 border border-slate-600 transition-colors">
+                    <i class="ph ph-x"></i>
+                </button>
+            </div>
+            <div class="flex-1 overflow-y-auto p-4 space-y-2 hide-scroll" id="episodes-list-container"></div>
+        </div>
+    </div>
+
+    <!-- Comments Sheet -->
+    <div id="comments-sheet" class="absolute inset-0 z-[60] hidden flex-col justify-end">
+        <div class="absolute inset-0 bg-black/60 backdrop-blur-sm cursor-pointer" onclick="closeCommentsSheet()"></div>
+        <div class="bg-darkcard rounded-t-3xl h-[65vh] relative z-10 flex flex-col animate-slide-up shadow-[0_-10px_40px_rgba(0,0,0,0.5)] border-t border-slate-700">
+            <div class="flex justify-between items-center p-5 border-b border-slate-700">
+                <div>
+                    <h3 class="font-bold text-lg">Comments</h3>
+                    <p class="text-xs text-slate-400" id="sheet-comment-count">0 Comments</p>
+                </div>
+                <button onclick="closeCommentsSheet()" class="w-8 h-8 bg-slate-800 hover:bg-slate-700 rounded-full flex items-center justify-center text-slate-400 border border-slate-600 transition-colors">
+                    <i class="ph ph-x"></i>
+                </button>
+            </div>
+            <div class="flex-1 overflow-y-auto p-4 space-y-4 hide-scroll" id="comments-list-container">
+                <!-- Comments go here -->
+            </div>
+            <div class="p-4 border-t border-slate-700 bg-darkbg flex gap-2 items-center">
+                <div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center font-bold text-xs" id="comment-avatar">U</div>
+                <input type="text" id="comment-input" placeholder="Add a comment..." class="flex-1 bg-darkcard text-white px-4 py-2 rounded-full border border-slate-600 focus:outline-none focus:border-primary text-sm">
+                <button onclick="postComment()" class="w-8 h-8 bg-primary rounded-full flex items-center justify-center text-white hover:bg-rose-700 transition-colors shrink-0">
+                    <i class="ph-fill ph-paper-plane-right"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div id="coin-modal" class="absolute inset-0 z-[70] hidden flex-col justify-center items-center p-4">
+        <div class="absolute inset-0 bg-black/80 backdrop-blur-sm cursor-pointer" onclick="hideCoinModal()"></div>
+        <div class="bg-darkcard w-full max-w-sm rounded-2xl p-6 relative z-10 animate-slide-up border border-slate-700 shadow-2xl text-center">
+            <i class="ph-fill ph-coins text-5xl text-yellow-500 mb-2"></i>
+            <h3 class="text-xl font-bold mb-1">Top Up Coins</h3>
+            <p class="text-sm text-slate-400 mb-6">Buy coins to unlock premium episodes.</p>
+            
+            <div class="space-y-3 mb-6">
+                <button onclick="addCoins(100); hideCoinModal(); showToast('Purchased 100 Coins!')" class="w-full flex justify-between items-center p-3 border border-slate-700 rounded-xl hover:border-primary transition bg-slate-800/50">
+                    <span class="flex items-center gap-2 font-bold"><i class="ph-fill ph-coin text-yellow-500"></i> 100 Coins</span>
+                    <span class="bg-slate-800 px-3 py-1 rounded text-sm">$0.99</span>
+                </button>
+                <button onclick="addCoins(500); hideCoinModal(); showToast('Purchased 500 Coins!')" class="w-full flex justify-between items-center p-3 border border-primary bg-primary/10 hover:bg-primary/20 rounded-xl transition relative overflow-hidden">
+                    <div class="absolute top-0 left-0 bg-primary text-[8px] font-bold px-2 py-0.5 rounded-br-lg">POPULAR</div>
+                    <span class="flex items-center gap-2 font-bold"><i class="ph-fill ph-coin text-yellow-500"></i> 500 Coins</span>
+                    <span class="bg-primary px-3 py-1 rounded text-sm text-white font-bold">$3.99</span>
+                </button>
+                <button onclick="addCoins(1200); hideCoinModal(); showToast('Purchased 1200 Coins!')" class="w-full flex justify-between items-center p-3 border border-slate-700 rounded-xl hover:border-primary transition bg-slate-800/50">
+                    <span class="flex items-center gap-2 font-bold"><i class="ph-fill ph-coin text-yellow-500"></i> 1200 Coins</span>
+                    <span class="bg-slate-800 px-3 py-1 rounded text-sm">$8.99</span>
+                </button>
+            </div>
+            <button onclick="hideCoinModal()" class="text-slate-400 text-sm font-bold hover:text-white transition-colors p-2">Cancel</button>
+        </div>
+    </div>
+
+    <!-- Subscription Modal -->
+    <div id="sub-modal" class="absolute inset-0 z-[110] hidden flex-col justify-center items-center p-4">
+        <div class="absolute inset-0 bg-black/80 backdrop-blur-sm cursor-pointer" onclick="hideSubscriptionModal()"></div>
+        <div class="bg-darkcard w-full max-w-sm rounded-2xl p-6 relative z-10 animate-slide-up border border-slate-700 shadow-2xl text-center">
+            <i class="ph-fill ph-crown text-5xl text-yellow-400 mb-2"></i>
+            <h3 class="text-xl font-bold mb-1">Ad-Free Experience</h3>
+            <p class="text-sm text-slate-400 mb-6">Enjoy uninterrupted dramas without any annoying ads.</p>
+            
+            <div class="space-y-3 mb-6">
+                <button onclick="subscribePlan(49)" class="w-full flex justify-between items-center p-3 border border-slate-700 rounded-xl hover:border-yellow-500 transition bg-slate-800/50">
+                    <span class="flex items-center gap-2 font-bold text-white">⭐ Premium Ad-Free</span>
+                    <span class="bg-slate-700 px-3 py-1 rounded text-sm text-white">₹49</span>
+                </button>
+                <button onclick="subscribePlan(499)" class="w-full flex justify-between items-center p-3 border border-purple-500 bg-purple-900/20 hover:bg-purple-900/40 rounded-xl transition relative overflow-hidden">
+                    <div class="absolute top-0 left-0 bg-purple-500 text-[8px] font-bold px-2 py-0.5 rounded-br-lg text-white">BEST VALUE</div>
+                    <span class="flex items-center gap-2 font-bold text-white">💎 Ultra Ad-Free</span>
+                    <span class="bg-purple-500 px-3 py-1 rounded text-sm text-white font-bold">₹499</span>
+                </button>
+            </div>
+            <button onclick="hideSubscriptionModal()" class="text-slate-400 text-sm font-bold hover:text-white transition-colors p-2">Cancel</button>
+        </div>
+    </div>
+
+    <!-- Interstitial Ad Modal -->
+    <div id="interstitial-ad-modal" class="absolute inset-0 z-[100] hidden flex-col justify-center items-center p-4 bg-black">
+        <div class="absolute top-4 right-4 z-10">
+            <button onclick="closeInterstitialAd()" id="ad-close-btn" class="bg-black/60 text-white px-4 py-2 rounded-full text-sm font-bold border border-white/20 hidden hover:bg-white/20 transition-colors">Skip Ad</button>
+            <div id="ad-timer" class="bg-black/60 text-white px-4 py-2 rounded-full text-sm font-bold border border-white/20">Skip in 5s</div>
+        </div>
+        <div class="text-center w-full max-w-sm">
+            <div class="w-20 h-20 bg-gradient-to-tr from-yellow-400 to-orange-500 rounded-2xl mx-auto flex items-center justify-center mb-6 shadow-lg shadow-orange-900/50">
+                <i class="ph-fill ph-speaker-high text-4xl text-black"></i>
+            </div>
+            <h3 class="text-2xl font-bold mb-3 text-white">Sponsored Content</h3>
+            <p class="text-slate-400 mb-8 text-sm">We use ads to keep most of our features free. Support us by watching this short ad.</p>
+            <button onclick="showSubscriptionModal()" class="w-full bg-gradient-to-r from-purple-500 to-indigo-600 hover:from-purple-600 hover:to-indigo-700 text-white px-6 py-4 rounded-xl font-bold shadow-lg shadow-purple-900/50 transition-all active:scale-95 flex items-center justify-center gap-2">
+                <i class="ph-fill ph-crown text-xl"></i> Remove Ads Premium
+            </button>
+        </div>
+    </div>
+
+    <!-- Edit Episode Modal -->
+    <div id="edit-ep-modal" class="absolute inset-0 z-[80] hidden flex-col justify-center items-center p-4">
+        <div class="absolute inset-0 bg-black/80 backdrop-blur-sm cursor-pointer" onclick="closeEditModal()"></div>
+        <div class="bg-darkcard w-full max-w-sm rounded-2xl p-6 relative z-10 animate-slide-up border border-slate-700 shadow-2xl">
+            <h3 class="text-xl font-bold mb-4 text-white">Edit Episode</h3>
+            <input type="hidden" id="edit-ep-series-id">
+            <input type="hidden" id="edit-ep-id">
+            
+            <div class="space-y-4 mb-6">
+                <div>
+                    <label class="block text-sm text-slate-400 mb-1">Episode Cost (0 = Free)</label>
+                    <input type="number" id="edit-ep-cost" class="w-full bg-darkbg text-white px-4 py-3 rounded-xl border border-slate-600 focus:outline-none focus:border-primary">
+                </div>
+                <div>
+                    <label class="block text-sm text-slate-400 mb-1">Video URL</label>
+                    <input type="text" id="edit-ep-video" class="w-full bg-darkbg text-white px-4 py-3 rounded-xl border border-slate-600 focus:outline-none focus:border-primary">
+                </div>
+            </div>
+            
+            <div class="flex gap-3">
+                <button onclick="closeEditModal()" class="flex-1 bg-slate-700 hover:bg-slate-600 text-white font-bold py-3 rounded-xl transition-colors">Cancel</button>
+                <button onclick="saveEditedEpisode()" class="flex-1 bg-primary hover:bg-rose-700 text-white font-bold py-3 rounded-xl transition-colors">Save Changes</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- BOTTOM NAVIGATION -->
+    <div id="bottom-nav" class="absolute bottom-0 w-full glass-panel border-t border-slate-800 flex justify-around items-center pt-2 pb-6 px-2 z-40 bottom-nav" style="display:none;">
+        <div class="nav-btn flex flex-col items-center gap-1 w-16 text-primary cursor-pointer transition-colors" data-target="home" onclick="navTo('home')">
+            <i class="ph-fill ph-fire text-2xl nav-icon"></i>
+            <span class="text-[10px] font-medium">For You</span>
+        </div>
+        <div class="nav-btn flex flex-col items-center gap-1 w-16 text-slate-400 cursor-pointer hover:text-slate-200 transition-colors" data-target="search" onclick="navTo('search')">
+            <i class="ph ph-house text-2xl nav-icon"></i>
+            <span class="text-[10px] font-medium">Home</span>
+        </div>
+        <div class="nav-btn flex flex-col items-center gap-1 w-16 text-slate-400 cursor-pointer hover:text-slate-200 transition-colors" data-target="mylist" onclick="navTo('mylist')">
+            <i class="ph ph-bookmark-simple text-2xl nav-icon"></i>
+            <span class="text-[10px] font-medium">My List</span>
+        </div>
+        <div class="nav-btn flex flex-col items-center gap-1 w-16 text-slate-400 cursor-pointer hover:text-slate-200 transition-colors" data-target="profile" onclick="navTo('profile')">
+            <i class="ph ph-user text-2xl nav-icon"></i>
+            <span class="text-[10px] font-medium">Profile</span>
+        </div>
+    </div>
+
+</div>
+
+<script>
+    // --- STATE & AUTHENTICATION ---
+    let isNavigatingFromHistory = false;
+    let lastBackPressTime = 0;
+    let isAdmin = false;
+    let adminPass = localStorage.getItem('dramaBite_admin_pass') || '243486';
+    let adFrequency = parseInt(localStorage.getItem('dramaBite_ad_freq')) || 4;
+    let episodesWatchedCount = 0;
+    let pendingPlay = false;
+
+    // Global App Users
+    let appUsers = [];
+    
+    // Active User State
+    let user = {
+        id: 'guest',
+        name: 'Guest User',
+        coins: 200,
+        isSubscribed: false,
+        subscriptionTier: null,
+        unlockedEpisodes: ['ep_1_1', 'ep_1_2', 'ep_2_1', 'ep_3_1'],
+        history: [],
+        progress: {},
+        likedDramas: [],
+        savedDramas: [],
+        language: 'English',
+        autoplay: true,
+        subtitles: true,
+        pin: null
+    };
+
+    let activeDramaId = null;
+    let currentEpIndex = 0;
+    let isPlaying = false;
+    let splashTimeout;
+    let currentStreamQuality = 'auto';
+    let cachedPreloads = new Set(); 
+    let allComments = {};
+
+    // Default playable MP4 Video URLs
+    const DUMMY_VIDEOS = [
+        "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4",
+        "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/TearsOfSteel.mp4",
+        "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4",
+        "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/Sintel.mp4"
+    ];
+
+    let dramas = [
+        {
+            id: "d1", title: "The CEO's Secret Wife",
+            desc: "She thought it was a fake marriage, but he had loved her for years. When his ex returns, will their contract stand?",
+            cover: "https://images.unsplash.com/photo-1574680096145-d05b474e2155?auto=format&fit=crop&w=800&q=80",
+            category: "Romance", trending: true,
+            episodes: Array.from({length: 4}).map((_, i) => ({ id: `ep_1_${i+1}`, title: `Episode ${i+1}`, cost: i < 2 ? 0 : 50, video: DUMMY_VIDEOS[i % 4] }))
+        },
+        {
+            id: "d2", title: "Revenge of the True Heiress",
+            desc: "Banished for 10 years by her fake sister, she returns with a billionaire status to take back her empire.",
+            cover: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=800&q=80",
+            category: "Revenge", trending: true,
+            episodes: Array.from({length: 3}).map((_, i) => ({ id: `ep_2_${i+1}`, title: `Episode ${i+1}`, cost: i < 1 ? 0 : 60, video: DUMMY_VIDEOS[(i+1) % 4] }))
+        },
+        {
+            id: "d3", title: "Vampire Prince's Blood Bride",
+            desc: "In a world ruled by vampires, one human holds the key to the ultimate power, and the Prince's heart.",
+            cover: "https://images.unsplash.com/photo-1509928015542-ed814c80330f?auto=format&fit=crop&w=800&q=80",
+            category: "Romance", trending: false,
+            episodes: Array.from({length: 3}).map((_, i) => ({ id: `ep_3_${i+1}`, title: `Episode ${i+1}`, cost: i < 1 ? 0 : 40, video: DUMMY_VIDEOS[(i+2) % 4] }))
+        }
+    ];
+
+    window.addEventListener('popstate', function(e) {
+        const openModals = [
+            { id: 'settings-detail-modal', closeFn: closeSettingsDetail },
+            { id: 'episodes-sheet', closeFn: closeEpisodesSheet },
+            { id: 'comments-sheet', closeFn: closeCommentsSheet },
+            { id: 'coin-modal', closeFn: hideCoinModal },
+            { id: 'sub-modal', closeFn: hideSubscriptionModal },
+            { id: 'interstitial-ad-modal', closeFn: closeInterstitialAd },
+            { id: 'edit-ep-modal', closeFn: closeEditModal }
+        ];
+        
+        let modalClosed = false;
+        const currentScreen = Array.from(document.querySelectorAll('.screen')).find(s => s.classList.contains('active'))?.id || 'home';
+
+        for (let modal of openModals) {
+            const el = document.getElementById(modal.id);
+            if (el && (!el.classList.contains('hidden') || el.style.display === 'flex' || el.style.display === 'block')) {
+                if (el.classList.contains('hidden') && el.style.display === 'none') continue;
+                if (el.classList.contains('hidden') && el.style.display === '') continue; 
+                
+                modal.closeFn();
+                modalClosed = true;
+                break; 
+            }
+        }
+
+        if (modalClosed) {
+            history.pushState({ screen: currentScreen }, '', `#${currentScreen}`);
+            return;
+        }
+
+        const targetScreen = e.state ? e.state.screen : 'exit';
+
+        if (targetScreen === 'exit' || targetScreen === 'splash' || (targetScreen === 'auth' && user.id !== 'guest')) {
+            const currentTime = new Date().getTime();
+            if (currentTime - lastBackPressTime < 2000) {
+                window.history.back();
+            } else {
+                lastBackPressTime = currentTime;
+                showToast("Press back again to exit");
+                history.pushState({ screen: currentScreen }, '', `#${currentScreen}`);
+            }
+        } else {
+            isNavigatingFromHistory = true;
+            navTo(targetScreen);
+            isNavigatingFromHistory = false;
+        }
+    });
+
+    function getBadgeHtml(tier, isSubFallback) {
+        if (tier === 'ultra' || (isAdmin && tier !== 'premium')) {
+            return '<span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-black bg-gradient-to-r from-purple-500 to-indigo-500 text-white shadow-lg border border-purple-400/30 tracking-wider uppercase drop-shadow-md">💎 Ultra</span>';
+        } else if (tier === 'premium' || isSubFallback) {
+            return '<span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-black bg-gradient-to-r from-yellow-500 to-orange-500 text-white shadow-lg border border-yellow-400/30 tracking-wider uppercase drop-shadow-md">⭐ Premium</span>';
+        }
+        return '';
+    }
+
+    // --- INITIALIZATION ---
+    window.onload = function() {
+        history.replaceState({ screen: 'exit' }, '', '#exit');
+        history.pushState({ screen: 'splash' }, '', '#splash');
+
+        const savedDramas = localStorage.getItem('dramaBite_dramas');
+        if (savedDramas) {
+            try { dramas = JSON.parse(savedDramas); } catch(e) {}
+        }
+
+        const savedUsers = localStorage.getItem('dramaBite_users');
+        if (savedUsers) {
+            try { appUsers = JSON.parse(savedUsers); } catch(e) {}
+        }
+
+        const savedComments = localStorage.getItem('dramaBite_comments');
+        if (savedComments) {
+            try { allComments = JSON.parse(savedComments); } catch(e) {}
+        }
+
+        const adminFreqField = document.getElementById('admin-ad-freq');
+        if(adminFreqField) adminFreqField.value = adFrequency;
+
+        renderHome();
+        updateUserUI();
+        setupVideoControls();
+        setupSwipe();
+        updateAdminSeriesDropdown(); 
+        
+        document.getElementById('player').addEventListener('click', (e) => {
+            const menu = document.getElementById('quality-menu');
+            if(!menu.classList.contains('hidden') && !e.target.closest('#quality-menu') && !e.target.closest('.ph-gear')) {
+                menu.classList.add('hidden');
+            }
+        });
+
+        splashTimeout = setTimeout(() => {
+            dismissSplash();
+        }, 3000);
+    };
+
+    function saveSession(type, id = null) {
+        localStorage.setItem('dramaBite_session', JSON.stringify({ type, id }));
+    }
+
+    function restoreSession() {
+        const sessionData = localStorage.getItem('dramaBite_session');
+        if (!sessionData) return false;
+        
+        try {
+            const session = JSON.parse(sessionData);
+            if (session.type === 'admin') {
+                isAdmin = true;
+                Object.assign(user, { id: 'admin', name: 'Admin Sahil', coins: 999999, isSubscribed: true, subscriptionTier: 'ultra', history: [], progress: {}, likedDramas: [], savedDramas: [], unlockedEpisodes: [], language: 'English', autoplay: true, subtitles: true, pin: null });
+                setupAdminUI();
+                return true;
+            } else if (session.type === 'user') {
+                const foundUser = appUsers.find(u => u.id === session.id);
+                if (foundUser) {
+                    isAdmin = false;
+                    Object.assign(user, foundUser);
+                    user.progress = user.progress || {};
+                    user.likedDramas = user.likedDramas || [];
+                    user.savedDramas = user.savedDramas || [];
+                    user.language = user.language || 'English';
+                    if (user.subscriptionTier === undefined) user.subscriptionTier = null;
+                    if (user.autoplay === undefined) user.autoplay = true;
+                    if (user.subtitles === undefined) user.subtitles = true;
+                    setupUserUI();
+                    return true;
+                }
+            } else if (session.type === 'guest') {
+                isAdmin = false;
+                Object.assign(user, { id: 'guest', name: 'Guest User', coins: 200, isSubscribed: false, subscriptionTier: null, unlockedEpisodes: ['ep_1_1', 'ep_1_2', 'ep_2_1', 'ep_3_1'], history: [], progress: {}, likedDramas: [], savedDramas: [], language: 'English', autoplay: true, subtitles: true, pin: null });
+                setupGuestUI();
+                return true;
+            }
+        } catch(e) { return false; }
+        return false;
+    }
+
+    function dismissSplash() {
+        if(splashTimeout) clearTimeout(splashTimeout);
+        const splash = document.getElementById('splash');
+        if (splash) splash.style.display = 'none';
+        
+        if (restoreSession()) {
+            navTo('home'); 
+        } else {
+            navTo('auth'); 
+        }
+    }
+
+    // --- AUTHENTICATION UI & LOGIC ---
+    function toggleAuth(type) {
+        const fLogin = document.getElementById('form-login');
+        const fSignup = document.getElementById('form-signup');
+        const tLogin = document.getElementById('tab-login');
+        const tSignup = document.getElementById('tab-signup');
+        const title = document.getElementById('auth-title');
+        const subtitle = document.getElementById('auth-subtitle');
+
+        if (type === 'login') {
+            fLogin.classList.remove('hidden');
+            fSignup.classList.add('hidden');
+            tLogin.classList.add('bg-darkcard', 'text-white', 'shadow-sm');
+            tLogin.classList.remove('text-slate-400');
+            tSignup.classList.remove('bg-darkcard', 'text-white', 'shadow-sm');
+            tSignup.classList.add('text-slate-400');
+            title.innerText = "Welcome Back";
+            subtitle.innerText = "Sign in to continue watching";
+        } else {
+            fSignup.classList.remove('hidden');
+            fLogin.classList.add('hidden');
+            tSignup.classList.add('bg-darkcard', 'text-white', 'shadow-sm');
+            tSignup.classList.remove('text-slate-400');
+            tLogin.classList.remove('bg-darkcard', 'text-white', 'shadow-sm');
+            tLogin.classList.add('text-slate-400');
+            title.innerText = "Create Account";
+            subtitle.innerText = "Join to unlock premium dramas";
+        }
+    }
+
+    function signup() {
+        const name = document.getElementById('signup-name').value.trim();
+        const id = document.getElementById('signup-username').value.trim();
+        const pass = document.getElementById('signup-password').value;
+        const conf = document.getElementById('signup-confirm').value;
+
+        if(!name || !id || !pass || !conf) {
+            showToast("Please fill out all fields.");
+            return;
+        }
+        if(pass !== conf) {
+            showToast("Passwords do not match!");
+            return;
+        }
+        
+        if(id === 'adminsahil' || appUsers.find(u => u.id === id)) {
+            showToast("Account already exists with this email/mobile.");
+            return;
+        }
+
+        const newUser = {
+            id: id, name: name, password: pass, coins: 500, isSubscribed: false, subscriptionTier: null,
+            unlockedEpisodes: ['ep_1_1', 'ep_1_2', 'ep_2_1', 'ep_3_1'], history: [], progress: {}, likedDramas: [], savedDramas: [], language: 'English', autoplay: true, subtitles: true, pin: null
+        };
+
+        appUsers.push(newUser);
+        localStorage.setItem('dramaBite_users', JSON.stringify(appUsers));
+        
+        showToast("Account created successfully! Please log in.");
+        
+        toggleAuth('login');
+        document.getElementById('login-username').value = id;
+        document.getElementById('login-password').value = '';
+        
+        document.getElementById('signup-name').value = '';
+        document.getElementById('signup-username').value = '';
+        document.getElementById('signup-password').value = '';
+        document.getElementById('signup-confirm').value = '';
+    }
+
+    function setupAdminUI() {
+        document.getElementById('profile-admin-btn').style.display = 'flex';
+        document.getElementById('profile-name').innerText = user.name;
+        document.getElementById('profile-id').innerText = 'Role: Owner';
+        document.getElementById('profile-avatar').innerText = 'A';
+        updateUserUI();
+        renderMyList();
+    }
+
+    function setupUserUI() {
+        document.getElementById('profile-admin-btn').style.display = 'none';
+        document.getElementById('profile-name').innerText = user.name;
+        document.getElementById('profile-id').innerText = user.id;
+        document.getElementById('profile-avatar').innerText = user.name.charAt(0).toUpperCase();
+        updateUserUI();
+        renderMyList();
+    }
+
+    function setupGuestUI() {
+        document.getElementById('profile-admin-btn').style.display = 'none';
+        document.getElementById('profile-name').innerText = user.name;
+        document.getElementById('profile-id').innerText = 'Role: Guest';
+        document.getElementById('profile-avatar').innerText = 'G';
+        updateUserUI();
+        renderMyList();
+    }
+
+    function login() {
+        const userVal = document.getElementById('login-username').value.trim();
+        const passVal = document.getElementById('login-password').value.trim();
+
+        if (!userVal || !passVal) {
+            showToast("Please enter an email and password.");
+            return;
+        }
+
+        if (userVal === "adminsahil" && passVal === adminPass) {
+            isAdmin = true;
+            Object.assign(user, { id: 'admin', name: 'Admin Sahil', coins: 999999, isSubscribed: true, subscriptionTier: 'ultra', history: [], progress: {}, likedDramas: [], savedDramas: [], unlockedEpisodes: [], language: 'English', autoplay: true, subtitles: true, pin: null });
+            setupAdminUI();
+            saveSession('admin');
+            showToast("Welcome back, Admin!");
+            navTo('admin'); 
+            return;
+        } 
+
+        const foundUser = appUsers.find(u => u.id === userVal && u.password === passVal);
+        if (foundUser) {
+            isAdmin = false;
+            Object.assign(user, foundUser); 
+            user.progress = user.progress || {};
+            user.likedDramas = user.likedDramas || [];
+            user.savedDramas = user.savedDramas || [];
+            user.language = user.language || 'English';
+            if (user.subscriptionTier === undefined) user.subscriptionTier = null;
+            if (user.autoplay === undefined) user.autoplay = true;
+            if (user.subtitles === undefined) user.subtitles = true;
+            setupUserUI();
+            saveSession('user', user.id);
+            showToast("Logged in successfully!");
+            navTo('home');
+        } else {
+            showToast("Invalid username or password.");
+        }
+    }
+
+    function guestLogin() {
+        isAdmin = false;
+        user = { id: 'guest', name: 'Guest User', coins: 200, isSubscribed: false, subscriptionTier: null, unlockedEpisodes: ['ep_1_1', 'ep_1_2', 'ep_2_1', 'ep_3_1'], history: [], progress: {}, likedDramas: [], savedDramas: [], language: 'English', autoplay: true, subtitles: true, pin: null };
+        setupGuestUI();
+        saveSession('guest');
+        showToast("Logged in as Guest");
+        navTo('home');
+    }
+
+    function logout() {
+        isAdmin = false;
+        document.getElementById('login-username').value = '';
+        document.getElementById('login-password').value = '';
+        
+        localStorage.removeItem('dramaBite_session');
+        user = { id: 'guest', name: 'Guest User', coins: 200, isSubscribed: false, subscriptionTier: null, unlockedEpisodes: [], history: [], progress: {}, likedDramas: [], savedDramas: [], language: 'English', autoplay: true, subtitles: true, pin: null };
+        renderMyList();
+        
+        showToast("Logged out successfully");
+        toggleAuth('login');
+        navTo('auth');
+    }
+
+    function syncActiveUser() {
+        if (isAdmin || user.id === 'guest') return; 
+        const index = appUsers.findIndex(u => u.id === user.id);
+        if (index > -1) {
+            appUsers[index] = { ...user };
+            localStorage.setItem('dramaBite_users', JSON.stringify(appUsers));
+        }
+    }
+
+    // --- ROUTING & NAVIGATION ---
+    function navTo(screenId) {
+        if (screenId === 'admin' && !isAdmin) {
+            showToast("Access Denied: Admin Privileges Required.");
+            navTo('home');
+            return;
+        }
+
+        if (!isNavigatingFromHistory) {
+            history.pushState({ screen: screenId }, '', `#${screenId}`);
+        }
+
+        const screens = document.querySelectorAll('.screen');
+        screens.forEach(s => { s.style.display = 'none'; s.classList.remove('active'); });
+        
+        const target = document.getElementById(screenId);
+        if (target) {
+            target.style.display = 'block';
+            target.classList.add('active'); 
+        }
+        
+        const bottomNav = document.getElementById('bottom-nav');
+        if (screenId === 'player' || screenId === 'auth') {
+            if(bottomNav) bottomNav.style.display = 'none';
+        } else {
+            if(bottomNav) bottomNav.style.display = 'flex';
+            updateBottomNavIcons(screenId);
+        }
+
+        if(screenId !== 'player' && isPlaying) {
+            const video = document.getElementById('main-video');
+            if (video) video.pause();
+            isPlaying = false;
+        }
+        
+        if(screenId === 'settings') updateSettingsUI();
+        if(screenId === 'mylist') renderMyList();
+    }
+
+    function updateBottomNavIcons(activeScreenId) {
+        document.querySelectorAll('.nav-btn').forEach(btn => {
+            const icon = btn.querySelector('.nav-icon');
+            if (btn.dataset.target === activeScreenId) {
+                btn.classList.remove('text-slate-400', 'hover:text-slate-200');
+                btn.classList.add('text-primary');
+                if(icon) icon.classList.replace('ph', 'ph-fill');
+            } else {
+                btn.classList.remove('text-primary');
+                btn.classList.add('text-slate-400', 'hover:text-slate-200');
+                if(icon) icon.classList.replace('ph-fill', 'ph');
+            }
+        });
+    }
+
+    // --- SETTINGS LOGIC ---
+    function updateSettingsUI() {
+        const subStatus = document.getElementById('settings-sub-status');
+        const parentalStatus = document.getElementById('parental-status');
+        const langStatus = document.getElementById('settings-lang-status');
+        
+        if (subStatus) {
+            if(user.isSubscribed) { 
+                subStatus.innerText = 'ACTIVE'; 
+                subStatus.className = 'px-2 py-0.5 rounded text-[10px] font-bold bg-green-900/40 text-green-400'; 
+            } else { 
+                subStatus.innerText = 'INACTIVE'; 
+                subStatus.className = 'px-2 py-0.5 rounded text-[10px] font-bold bg-slate-800 text-slate-400'; 
+            }
+        }
+        if (parentalStatus) parentalStatus.innerHTML = (user.pin ? 'On' : 'Off') + ' <i class="ph ph-caret-right"></i>';
+        if (langStatus) langStatus.innerText = user.language || 'English';
+    }
+
+    function openSettingsDetail(type) {
+        const modal = document.getElementById('settings-detail-modal');
+        const title = document.getElementById('settings-detail-title');
+        const content = document.getElementById('settings-detail-content');
+        const saveBtn = document.getElementById('settings-save-btn');
+        
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+        saveBtn.classList.remove('hidden');
+
+        if (type === 'personal') {
+            title.innerText = 'Personal Details';
+            content.innerHTML = `
+                <div class="space-y-4">
+                    <div><label class="block text-xs text-slate-400 mb-1">Display Name</label><input type="text" id="set-name" value="${user.name}" class="w-full bg-darkcard p-3 rounded-xl border border-slate-700 text-white outline-none"></div>
+                    <div><label class="block text-xs text-slate-400 mb-1">User ID / Email</label><input type="text" value="${user.id}" disabled class="w-full bg-slate-800 text-slate-500 p-3 rounded-xl border border-slate-700 outline-none"></div>
+                </div>
+            `;
+            saveBtn.onclick = () => {
+                const newName = document.getElementById('set-name').value;
+                if(newName) { 
+                    user.name = newName; 
+                    syncActiveUser(); 
+                    if (isAdmin) setupAdminUI(); 
+                    else if (user.id === 'guest') setupGuestUI(); 
+                    else setupUserUI(); 
+                    showToast('Profile updated'); 
+                    closeSettingsDetail(); 
+                }
+            };
+        } else if (type === 'language') {
+            title.innerText = 'Languages';
+            const langs = ['English', 'Hindi', 'Tamil', 'Bhojpuri', 'Telugu'];
+            content.innerHTML = `<div class="space-y-2">${langs.map(l => `
+                <div onclick="user.language='${l}'; closeSettingsDetail(); showToast('Language set to ${l}'); navTo('settings'); syncActiveUser();" class="flex items-center justify-between p-4 bg-darkcard rounded-xl border border-slate-700 cursor-pointer hover:bg-slate-700 transition-colors">
+                    <span class="text-white">${l}</span> ${user.language === l ? '<i class="ph-fill ph-check-circle text-primary text-xl"></i>' : ''}
+                </div>`).join('')}</div>`;
+            saveBtn.classList.add('hidden');
+        } else if (type === 'parental') {
+            title.innerText = 'Parental Lock';
+            content.innerHTML = `
+                <div class="space-y-4">
+                    <p class="text-xs text-slate-400">Set a 4-digit PIN to restrict sensitive content.</p>
+                    <input type="number" id="set-pin" maxlength="4" placeholder="Enter 4-digit PIN" class="w-full bg-darkcard p-3 rounded-xl border border-slate-700 text-center text-2xl tracking-widest text-white outline-none focus:border-primary transition-colors">
+                </div>
+            `;
+            saveBtn.onclick = () => {
+                const pin = document.getElementById('set-pin').value;
+                if(pin.length === 4) { user.pin = pin; syncActiveUser(); showToast('Parental PIN Set'); closeSettingsDetail(); navTo('settings'); }
+                else if (pin.length === 0) { user.pin = null; syncActiveUser(); showToast('Parental PIN Removed'); closeSettingsDetail(); navTo('settings'); }
+                else showToast('Enter exactly 4 digits to set, or clear to disable');
+            };
+        } else if (type === 'subscription') {
+            title.innerText = 'Subscription Management';
+            saveBtn.classList.add('hidden');
+            if (user.isSubscribed) {
+                content.innerHTML = `
+                    <div class="space-y-4">
+                        <div class="p-4 bg-green-900/20 border border-green-500/30 rounded-xl text-center">
+                            <i class="ph-fill ph-check-circle text-4xl text-green-400 mb-2"></i>
+                            <h3 class="text-white font-bold text-lg">Active Premium Plan</h3>
+                            <p class="text-green-300 text-xs mt-1">Enjoying Ad-Free Experience</p>
+                        </div>
+                        <button onclick="user.isSubscribed=false; user.subscriptionTier=null; syncActiveUser(); showToast('Subscription Cancelled'); closeSettingsDetail(); navTo('settings');" class="w-full bg-slate-800 hover:bg-slate-700 text-rose-400 font-bold py-3 rounded-xl border border-slate-700 transition-colors">Cancel Subscription</button>
+                    </div>
+                `;
+            } else {
+                content.innerHTML = `
+                    <div class="space-y-4">
+                        <div class="p-4 bg-slate-800 rounded-xl text-center border border-slate-700">
+                            <i class="ph-fill ph-warning-circle text-4xl text-slate-400 mb-2"></i>
+                            <h3 class="text-white font-bold text-lg">No Active Plan</h3>
+                            <p class="text-slate-400 text-xs mt-1">You are currently on the free tier.</p>
+                        </div>
+                        <button onclick="closeSettingsDetail(); showSubscriptionModal();" class="w-full bg-primary hover:bg-rose-700 text-white font-bold py-3 rounded-xl transition-colors shadow-lg shadow-rose-900/20">View Plans & Upgrade</button>
+                    </div>
+                `;
+            }
+        } else if (type === 'player') {
+            title.innerText = 'Player Options';
+            content.innerHTML = `
+                <div class="space-y-4">
+                    <div class="flex items-center justify-between p-4 bg-darkcard rounded-xl border border-slate-700">
+                        <span class="text-white text-sm">Autoplay Next Episode</span>
+                        <input type="checkbox" id="set-auto" ${user.autoplay !== false ? 'checked' : ''} class="w-5 h-5 accent-primary cursor-pointer">
+                    </div>
+                    <div class="flex items-center justify-between p-4 bg-darkcard rounded-xl border border-slate-700">
+                        <span class="text-white text-sm">Enable Subtitles</span>
+                        <input type="checkbox" id="set-subs" ${user.subtitles !== false ? 'checked' : ''} class="w-5 h-5 accent-primary cursor-pointer">
+                    </div>
+                    <div class="p-4 bg-darkcard rounded-xl border border-slate-700">
+                        <label class="block text-xs text-slate-400 mb-2">Default Resolution</label>
+                        <select id="set-res" class="w-full bg-darkbg p-3 rounded-lg border border-slate-600 text-white outline-none cursor-pointer">
+                            <option value="auto" ${currentStreamQuality === 'auto' ? 'selected' : ''}>Auto (Recommended)</option>
+                            <option value="1080p" ${currentStreamQuality === '1080p' ? 'selected' : ''}>High (1080p)</option>
+                            <option value="720p" ${currentStreamQuality === '720p' ? 'selected' : ''}>Medium (720p)</option>
+                            <option value="480p" ${currentStreamQuality === '480p' ? 'selected' : ''}>Data Saver (480p)</option>
+                        </select>
+                    </div>
+                </div>
+            `;
+            saveBtn.onclick = () => {
+                user.autoplay = document.getElementById('set-auto').checked;
+                user.subtitles = document.getElementById('set-subs').checked;
+                currentStreamQuality = document.getElementById('set-res').value;
+                syncActiveUser(); showToast('Player Settings Saved'); closeSettingsDetail();
+            };
+        }
+    }
+
+    function closeSettingsDetail() { document.getElementById('settings-detail-modal').classList.add('hidden'); }
+
+    // --- UI RENDERERS ---
+    function renderHome() {
+        if (!dramas || dramas.length === 0) return;
+        
+        const feat = dramas.find(d => d.episodes && d.episodes.length > 0) || dramas[0];
+        
+        document.getElementById('featured-container').innerHTML = `
+            <img src="${feat.cover}" class="w-full h-full object-cover">
+            <div class="absolute inset-0 bg-gradient-to-t from-darkbg via-darkbg/40 to-transparent"></div>
+            <div class="absolute bottom-0 w-full p-6 text-center">
+                <span class="px-2 py-1 bg-primary/20 text-primary text-[10px] font-bold rounded uppercase tracking-wider border border-primary/50">Top Pick</span>
+                <h2 class="text-3xl font-black mt-2 mb-2 leading-tight drop-shadow-md">${feat.title}</h2>
+                <p class="text-sm text-slate-300 mb-4 line-clamp-2 drop-shadow">${feat.desc}</p>
+                <div class="flex gap-3 px-4">
+                    <button onclick="openPlayer('${feat.id}')" class="flex-1 bg-white hover:bg-slate-200 transition-colors text-black font-bold py-3 rounded-full flex items-center justify-center gap-2 active:scale-95 shadow-lg">
+                        <i class="ph-fill ph-play text-xl"></i> Play
+                    </button>
+                    <button onclick="showToast('Added to Watchlist')" class="w-12 h-12 bg-slate-800/80 hover:bg-slate-700 transition-colors border border-slate-600 rounded-full flex items-center justify-center active:scale-95 shadow-lg">
+                        <i class="ph ph-plus text-xl"></i>
+                    </button>
+                </div>
+            </div>
+        `;
+
+        document.getElementById('trending-container').innerHTML = dramas.map(d => `
+            <div class="shrink-0 w-32 relative rounded-xl overflow-hidden shadow-lg border border-slate-800 cursor-pointer snap-start transition-transform hover:scale-105 active:scale-95" onclick="openPlayer('${d.id}')">
+                <div class="aspect-[2/3]">
+                    <img src="${d.cover}" class="w-full h-full object-cover">
+                </div>
+                <div class="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent flex flex-col justify-end p-2">
+                    <h3 class="text-xs font-bold truncate text-white">${d.title}</h3>
+                    <p class="text-[10px] text-slate-300">${d.episodes ? d.episodes.length : 0} EP</p>
+                </div>
+                ${d.trending ? '<div class="absolute top-1 right-1 bg-primary text-[8px] font-bold px-1 rounded">HOT</div>' : ''}
+            </div>
+        `).join('');
+
+        document.getElementById('continue-container').innerHTML = dramas.slice(0,2).map(d => `
+            <div class="shrink-0 w-40 cursor-pointer snap-start group active:scale-95 transition-transform" onclick="openPlayer('${d.id}')">
+                <div class="aspect-video relative rounded-lg overflow-hidden border border-slate-800 mb-1 shadow-lg">
+                    <img src="${d.cover}" class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110">
+                    <div class="absolute inset-0 bg-black/40 flex items-center justify-center">
+                        <i class="ph-fill ph-play-circle text-3xl text-white/80 group-hover:text-white transition-colors"></i>
+                    </div>
+                    <div class="absolute bottom-0 left-0 h-1 bg-primary w-1/3"></div>
+                </div>
+                <h3 class="text-xs font-bold truncate text-slate-200 group-hover:text-white transition-colors">${d.title}</h3>
+                <p class="text-[10px] text-slate-400">EP 1 | Start Watching</p>
+            </div>
+        `).join('');
+
+        document.getElementById('browse-container').innerHTML = dramas.map(d => `
+            <div class="relative rounded-xl overflow-hidden border border-slate-800 cursor-pointer aspect-[2/3] group shadow-lg active:scale-95 transition-transform" onclick="openPlayer('${d.id}')">
+                <img src="${d.cover}" class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110">
+                <div class="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent flex flex-col justify-end p-2">
+                    <span class="text-[9px] text-primary font-bold mb-0.5">${d.category}</span>
+                    <h3 class="text-xs font-bold line-clamp-2 text-white leading-tight group-hover:text-primary transition-colors">${d.title}</h3>
+                </div>
+            </div>
+        `).join('');
+    }
+
+    function renderMyList() {
+        const historyContainer = document.getElementById('mylist-history-container');
+        const savedContainer = document.getElementById('mylist-saved-container');
+        if (!historyContainer || !savedContainer) return;
+
+        if (!user.history || user.history.length === 0) {
+            historyContainer.innerHTML = `<p class="text-sm text-slate-400 py-4 px-2">No recently watched dramas.</p>`;
+        } else {
+            const historyDramas = user.history.map(id => dramas.find(d => d.id === id)).filter(Boolean);
+            historyContainer.innerHTML = historyDramas.map(d => {
+                const progressEp = (user.progress && user.progress[d.id] !== undefined) ? user.progress[d.id] : 0;
+                const totalEps = d.episodes && d.episodes.length > 0 ? d.episodes.length : 1;
+                const percentage = Math.min(((progressEp + 1) / totalEps) * 100, 100);
+                return `
+                <div class="shrink-0 w-40 cursor-pointer snap-start group active:scale-95 transition-transform" onclick="openPlayer('${d.id}')">
+                    <div class="aspect-video relative rounded-lg overflow-hidden border border-slate-800 mb-1 shadow-lg">
+                        <img src="${d.cover}" class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110">
+                        <div class="absolute inset-0 bg-black/40 flex items-center justify-center">
+                            <i class="ph-fill ph-play-circle text-3xl text-white/80 group-hover:text-white transition-colors"></i>
+                        </div>
+                        <div class="absolute bottom-0 left-0 h-1 bg-primary" style="width: ${percentage}%"></div>
+                    </div>
+                    <h3 class="text-xs font-bold truncate text-slate-200 group-hover:text-white transition-colors">${d.title}</h3>
+                    <p class="text-[10px] text-slate-400">Resume EP ${progressEp + 1}</p>
+                </div>
+            `}).join('');
+        }
+
+        const savedSet = new Set([...(user.likedDramas || []), ...(user.savedDramas || [])]);
+        const combinedSaved = Array.from(savedSet);
+
+        if (combinedSaved.length === 0) {
+            savedContainer.innerHTML = `<p class="text-sm text-slate-400 py-4 px-2 col-span-2">No saved dramas yet.</p>`;
+        } else {
+            const savedDramas = combinedSaved.map(id => dramas.find(d => d.id === id)).filter(Boolean);
+            savedContainer.innerHTML = savedDramas.map(d => `
+                <div class="relative rounded-xl overflow-hidden border border-slate-800 cursor-pointer aspect-[2/3] group shadow-lg active:scale-95 transition-transform" onclick="openPlayer('${d.id}')">
+                    <img src="${d.cover}" class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110">
+                    <div class="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent flex flex-col justify-end p-2">
+                        <span class="text-[9px] text-primary font-bold mb-0.5">${d.category}</span>
+                        <h3 class="text-xs font-bold line-clamp-2 text-white leading-tight group-hover:text-primary transition-colors">${d.title}</h3>
+                    </div>
+                </div>
+            `).join('');
+        }
+    }
+
+    // --- PLAYER & STREAMING QUALITY LOGIC ---
+    function getEstimatedNetworkQuality() {
+        if (currentStreamQuality !== 'auto') return currentStreamQuality;
+        const conn = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
+        if (conn) {
+            if (conn.downlink < 1.5) return '480p';
+            if (conn.downlink < 3.0) return '720p';
+        }
+        return '1080p'; 
+    }
+
+    function toggleQualityMenu(e) {
+        if(e) e.stopPropagation();
+        const menu = document.getElementById('quality-menu');
+        if (menu.classList.contains('hidden')) menu.classList.remove('hidden');
+        else menu.classList.add('hidden');
+    }
+
+    function setQuality(qual) {
+        currentStreamQuality = qual;
+        toggleQualityMenu();
+        ['auto', '1080p', '720p', '480p'].forEach(q => {
+            const btn = document.getElementById(`q-${q}`);
+            if(btn) {
+                if (q === qual) {
+                    btn.classList.add('text-primary', 'font-bold');
+                    btn.classList.remove('text-white');
+                } else {
+                    btn.classList.add('text-white');
+                    btn.classList.remove('text-primary', 'font-bold');
+                }
+            }
+        });
+        showToast(`Stream quality set to ${qual}`);
+    }
+
+    function preloadNextVideo() {
+        const drama = dramas.find(d => d.id === activeDramaId);
+        if (drama && drama.episodes && currentEpIndex + 1 < drama.episodes.length) {
+            const nextEp = drama.episodes[currentEpIndex + 1];
+            if (!cachedPreloads.has(nextEp.video)) {
+                const link = document.createElement('link');
+                link.rel = 'preload';
+                link.as = 'video';
+                link.href = nextEp.video;
+                document.head.appendChild(link);
+                cachedPreloads.add(nextEp.video);
+            }
+        }
+    }
+
+    function openPlayer(dramaId, epIndex = null) {
+        const drama = dramas.find(d => d.id === dramaId);
+        if (!drama || !drama.episodes || drama.episodes.length === 0) {
+            showToast("No episodes available for this series yet.");
+            return;
+        }
+
+        activeDramaId = dramaId;
+        if (epIndex !== null) {
+            currentEpIndex = epIndex;
+        } else {
+            if (!user.progress) user.progress = {};
+            currentEpIndex = user.progress[dramaId] !== undefined ? user.progress[dramaId] : 0;
+        }
+        navTo('player');
+        loadEpisode();
+    }
+
+    function closePlayer() {
+        const video = document.getElementById('main-video');
+        if (video) video.pause();
+        isPlaying = false;
+        if(window.history.length > 2) {
+            window.history.back();
+        } else {
+            navTo('home');
+        }
+    }
+
+    // AD SYSTEM INTEGRATION
+    let adTimerInterval;
+
+    function loadEpisode() {
+        const drama = dramas.find(d => d.id === activeDramaId);
+        if (!drama || !drama.episodes || drama.episodes.length === 0) return;
+        
+        if (currentEpIndex < 0) currentEpIndex = 0;
+        if (currentEpIndex >= drama.episodes.length) currentEpIndex = drama.episodes.length - 1;
+
+        const ep = drama.episodes[currentEpIndex];
+        document.getElementById('player-drama-title').innerText = drama.title;
+        document.getElementById('player-drama-desc').innerText = drama.desc;
+        document.getElementById('player-ep-badge').innerText = `EP ${currentEpIndex + 1}`;
+        document.getElementById('player-ep-title').innerText = ep.title;
+
+        if (!user.history) user.history = [];
+        if (!user.progress) user.progress = {};
+        if (!user.likedDramas) user.likedDramas = [];
+        if (!user.savedDramas) user.savedDramas = [];
+
+        user.history = user.history.filter(id => id !== drama.id);
+        user.history.unshift(drama.id);
+        user.progress[drama.id] = currentEpIndex;
+        syncActiveUser();
+        renderMyList();
+
+        // Icon UI Sync
+        const likeIcon = document.getElementById('player-like-icon');
+        const saveIcon = document.getElementById('player-save-icon');
+        
+        if (likeIcon) {
+            if (user.likedDramas.includes(activeDramaId)) {
+                likeIcon.classList.add('text-primary');
+                likeIcon.classList.remove('text-white');
+            } else {
+                likeIcon.classList.remove('text-primary');
+                likeIcon.classList.add('text-white');
+            }
+        }
+        if (saveIcon) {
+            if (user.savedDramas.includes(activeDramaId)) {
+                saveIcon.classList.add('text-yellow-400');
+                saveIcon.classList.remove('text-white');
+            } else {
+                saveIcon.classList.remove('text-yellow-400');
+                saveIcon.classList.add('text-white');
+            }
+        }
+
+        const dramaComments = allComments[activeDramaId] || [];
+        document.getElementById('player-comment-count').innerText = dramaComments.length > 0 ? dramaComments.length : '0';
+
+        const isUnlocked = isAdmin || ep.cost === 0 || user.unlockedEpisodes.includes(ep.id);
+        const lockOverlay = document.getElementById('lock-overlay');
+        const video = document.getElementById('main-video');
+
+        if (isUnlocked) {
+            lockOverlay.classList.add('hidden');
+            video.src = ep.video;
+            
+            if (!isAdmin && !user.isSubscribed) {
+                episodesWatchedCount++;
+                if (episodesWatchedCount > adFrequency) {
+                    episodesWatchedCount = 1; 
+                    pendingPlay = true; 
+                    showInterstitialAd();
+                    return; 
+                }
+            }
+            playCurrentVideo();
+        } else {
+            video.pause();
+            isPlaying = false;
+            document.getElementById('pause-indicator').classList.add('hidden');
+            document.getElementById('buffering-indicator').classList.add('hidden');
+            video.removeAttribute('src');
+            
+            document.getElementById('lock-ep-title').innerText = `EP ${currentEpIndex + 1}`;
+            document.getElementById('lock-cost').innerText = ep.cost;
+            document.getElementById('lock-balance').innerText = user.coins;
+            lockOverlay.classList.remove('hidden');
+            lockOverlay.style.backgroundImage = `url(${drama.cover})`;
+            lockOverlay.style.backgroundSize = 'cover';
+            lockOverlay.style.backgroundPosition = 'center';
+        }
+    }
+
+    function playCurrentVideo() {
+        const video = document.getElementById('main-video');
+        const bufferingLoader = document.getElementById('buffering-indicator');
+        bufferingLoader.classList.remove('hidden');
+        
+        const playPromise = video.play();
+        if (playPromise !== undefined) {
+            playPromise.then(_ => {
+                isPlaying = true;
+                document.getElementById('pause-indicator').classList.add('hidden');
+                preloadNextVideo();
+            }).catch(error => {
+                isPlaying = false;
+                document.getElementById('pause-indicator').classList.remove('hidden');
+            });
+        }
+    }
+
+    function showInterstitialAd() {
+        const modal = document.getElementById('interstitial-ad-modal');
+        const closeBtn = document.getElementById('ad-close-btn');
+        const timerDiv = document.getElementById('ad-timer');
+        
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+        
+        closeBtn.classList.add('hidden');
+        timerDiv.classList.remove('hidden');
+        
+        let timeLeft = 5;
+        timerDiv.innerText = `Skip in ${timeLeft}s`;
+        
+        clearInterval(adTimerInterval);
+        adTimerInterval = setInterval(() => {
+            timeLeft--;
+            timerDiv.innerText = `Skip in ${timeLeft}s`;
+            if (timeLeft <= 0) {
+                clearInterval(adTimerInterval);
+                timerDiv.classList.add('hidden');
+                closeBtn.classList.remove('hidden');
+            }
+        }, 1000);
+    }
+
+    function closeInterstitialAd() {
+        document.getElementById('interstitial-ad-modal').classList.add('hidden');
+        document.getElementById('interstitial-ad-modal').classList.remove('flex');
+        if (pendingPlay) {
+            pendingPlay = false;
+            playCurrentVideo();
+        }
+    }
+
+    function nextEpisode(e) {
+        if (e) e.stopPropagation();
+        const drama = dramas.find(d => d.id === activeDramaId);
+        if (drama && drama.episodes && currentEpIndex < drama.episodes.length - 1) {
+            currentEpIndex++;
+            loadEpisode();
+        } else {
+            showToast("You have reached the end of this drama.");
+            isPlaying = false;
+            document.getElementById('pause-indicator').classList.remove('hidden');
+            const icon = document.getElementById('pause-indicator').querySelector('i');
+            if(icon) icon.classList.replace('ph-pause', 'ph-play');
+        }
+    }
+
+    function prevEpisode(e) {
+        if (e) e.stopPropagation();
+        if (currentEpIndex > 0) {
+            currentEpIndex--;
+            loadEpisode();
+        } else {
+            showToast("This is the first episode.");
+        }
+    }
+
+    function togglePlay() {
+        const video = document.getElementById('main-video');
+        const lockOverlay = document.getElementById('lock-overlay');
+        const indicator = document.getElementById('pause-indicator');
+        
+        if (!lockOverlay.classList.contains('hidden')) return;
+
+        if (video.paused) {
+            video.play();
+            isPlaying = true;
+            indicator.classList.add('hidden');
+        } else {
+            video.pause();
+            isPlaying = false;
+            indicator.classList.remove('hidden');
+            const icon = indicator.querySelector('i');
+            if(icon) icon.classList.replace('ph-pause', 'ph-play');
+        }
+    }
+
+    function setupVideoControls() {
+        const video = document.getElementById('main-video');
+        const progress = document.getElementById('progress-bar');
+        const timeCur = document.getElementById('time-current');
+        const timeTot = document.getElementById('time-total');
+        const bufferingLoader = document.getElementById('buffering-indicator');
+
+        if (!video || !progress || !timeCur || !timeTot) return;
+
+        const formatTime = (seconds) => {
+            if(isNaN(seconds)) return "0:00";
+            const m = Math.floor(seconds / 60);
+            const s = Math.floor(seconds % 60);
+            return `${m}:${s < 10 ? '0' : ''}${s}`;
+        };
+
+        video.addEventListener('waiting', () => { bufferingLoader.classList.remove('hidden'); });
+        video.addEventListener('playing', () => { bufferingLoader.classList.add('hidden'); });
+        video.addEventListener('canplay', () => { bufferingLoader.classList.add('hidden'); });
+
+        video.addEventListener('timeupdate', () => {
+            if(video.duration) {
+                progress.value = (video.currentTime / video.duration) * 100;
+                timeCur.innerText = formatTime(video.currentTime);
+            }
+        });
+
+        video.addEventListener('loadedmetadata', () => {
+            timeTot.innerText = formatTime(video.duration);
+        });
+
+        video.addEventListener('ended', () => {
+            if(user.autoplay !== false) nextEpisode(null);
+        });
+
+        progress.addEventListener('input', (e) => {
+            if(video.duration) {
+                video.currentTime = (e.target.value / 100) * video.duration;
+            }
+        });
+    }
+
+    function setupSwipe() {
+        let touchStartY = 0; let touchEndY = 0;
+        const playerScreen = document.getElementById('player');
+        if (!playerScreen) return;
+
+        playerScreen.addEventListener('touchstart', e => { touchStartY = e.changedTouches[0].screenY; }, {passive: true});
+        playerScreen.addEventListener('touchend', e => {
+            touchEndY = e.changedTouches[0].screenY;
+            const sheet = document.getElementById('episodes-sheet');
+            const cSheet = document.getElementById('comments-sheet');
+            if (sheet && sheet.style.display === 'flex') return;
+            if (cSheet && cSheet.style.display === 'flex') return;
+            
+            const swipeDistance = touchStartY - touchEndY;
+            if (swipeDistance > 50) nextEpisode(null);
+            else if (swipeDistance < -50) prevEpisode(null);
+        }, {passive: true});
+    }
+
+    // --- PLAYER ACTION BUTTONS LOGIC ---
+    function toggleLike() {
+        if (!activeDramaId) return;
+        if (!user.likedDramas) user.likedDramas = [];
+        const icon = document.getElementById('player-like-icon');
+
+        if (user.likedDramas.includes(activeDramaId)) {
+            user.likedDramas = user.likedDramas.filter(id => id !== activeDramaId);
+            if(icon) {
+                icon.classList.remove('text-primary');
+                icon.classList.add('text-white');
+            }
+        } else {
+            user.likedDramas.push(activeDramaId);
+            if(icon) {
+                icon.classList.remove('text-white');
+                icon.classList.add('text-primary');
+            }
+        }
+        
+        syncActiveUser();
+        renderMyList();
+    }
+
+    function toggleSave() {
+        if (!activeDramaId) return;
+        if (!user.savedDramas) user.savedDramas = [];
+        const icon = document.getElementById('player-save-icon');
+
+        if (user.savedDramas.includes(activeDramaId)) {
+            user.savedDramas = user.savedDramas.filter(id => id !== activeDramaId);
+            if(icon) {
+                icon.classList.remove('text-yellow-400');
+                icon.classList.add('text-white');
+            }
+            showToast("Removed from My List");
+        } else {
+            user.savedDramas.push(activeDramaId);
+            if(icon) {
+                icon.classList.remove('text-white');
+                icon.classList.add('text-yellow-400');
+            }
+            showToast("Saved to My List");
+        }
+        
+        syncActiveUser();
+        renderMyList();
+    }
+
+    function shareDrama() {
+        const drama = dramas.find(d => d.id === activeDramaId);
+        if (!drama) return;
+        
+        const shareData = {
+            title: `Watch ${drama.title} on M Sahil Flix!`,
+            text: drama.desc,
+            url: window.location.href
+        };
+        
+        if (navigator.share && navigator.canShare && navigator.canShare(shareData)) {
+            navigator.share(shareData).catch(err => console.log('Share error:', err));
+        } else {
+            const dummy = document.createElement('input');
+            document.body.appendChild(dummy);
+            dummy.value = window.location.href;
+            dummy.select();
+            document.execCommand('copy');
+            document.body.removeChild(dummy);
+            showToast('Link copied to clipboard!');
+        }
+    }
+
+    function openCommentsSheet() {
+        if (!activeDramaId) return;
+        const sheet = document.getElementById('comments-sheet');
+        if(document.getElementById('comment-avatar')) {
+            document.getElementById('comment-avatar').innerText = user.name.charAt(0).toUpperCase();
+        }
+        renderComments();
+        sheet.classList.remove('hidden');
+        sheet.style.display = 'flex';
+    }
+    
+    function closeCommentsSheet() {
+        const sheet = document.getElementById('comments-sheet');
+        if (sheet) { sheet.classList.add('hidden'); sheet.style.display = 'none'; }
+    }
+    
+    function renderComments() {
+        const container = document.getElementById('comments-list-container');
+        const dramaComments = allComments[activeDramaId] || [];
+        document.getElementById('sheet-comment-count').innerText = `${dramaComments.length} Comments`;
+        document.getElementById('player-comment-count').innerText = dramaComments.length || '0';
+        
+        if (dramaComments.length === 0) {
+            container.innerHTML = `<p class="text-sm text-slate-400 text-center py-8">No comments yet. Be the first!</p>`;
+            return;
+        }
+        
+        container.innerHTML = dramaComments.map(c => `
+            <div class="flex gap-3 mb-4">
+                <div class="w-8 h-8 rounded-full bg-slate-700 flex-shrink-0 flex items-center justify-center font-bold text-xs text-white">${c.name.charAt(0).toUpperCase()}</div>
+                <div>
+                    <div class="flex items-center flex-wrap gap-2 mb-1">
+                        <h4 class="text-sm font-bold text-white flex items-center">${c.name} ${getBadgeHtml(c.tier, false)}</h4>
+                        <span class="text-[10px] text-slate-500 ml-auto">${c.date}</span>
+                    </div>
+                    <p class="text-sm text-slate-300 mt-1">${c.text}</p>
+                </div>
+            </div>
+        `).join('');
+    }
+    
+    function postComment() {
+        if (user.id === 'guest') {
+            showToast("Please log in to comment.");
+            return;
+        }
+        const input = document.getElementById('comment-input');
+        const text = input.value.trim();
+        if (!text) return;
+        
+        if (!allComments[activeDramaId]) allComments[activeDramaId] = [];
+        
+        const dateStr = new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+        
+        allComments[activeDramaId].push({
+            name: user.name,
+            tier: user.subscriptionTier || (user.isSubscribed ? 'premium' : null),
+            text: text,
+            date: dateStr
+        });
+        
+        localStorage.setItem('dramaBite_comments', JSON.stringify(allComments));
+        input.value = '';
+        renderComments();
+    }
+
+    // --- MONETIZATION & SUBSCRIPTION ---
+    function unlockEpisode() {
+        const drama = dramas.find(d => d.id === activeDramaId);
+        if (!drama) return;
+        const ep = drama.episodes[currentEpIndex];
+        
+        if (user.coins >= ep.cost) {
+            user.coins -= ep.cost;
+            user.unlockedEpisodes.push(ep.id);
+            syncActiveUser();
+            updateUserUI();
+            showToast(`Unlocked ${ep.title}!`);
+            loadEpisode();
+        } else {
+            showCoinModal();
+        }
+    }
+
+    function simulateAdWatch(context) {
+        showToast("Playing Ad...");
+        setTimeout(() => {
+            if(context === 'unlock') {
+                const drama = dramas.find(d => d.id === activeDramaId);
+                if (!drama) return;
+                const ep = drama.episodes[currentEpIndex];
+                user.unlockedEpisodes.push(ep.id);
+                syncActiveUser();
+                showToast("Ad finished. Episode Unlocked!");
+                loadEpisode();
+            } else {
+                addCoins(30);
+                showToast("Ad finished. +30 Coins!");
+            }
+        }, 2000);
+    }
+
+    function addCoins(amount) { 
+        user.coins += amount; 
+        syncActiveUser();
+        updateUserUI(); 
+    }
+
+    function showSubscriptionModal() {
+        document.getElementById('sub-modal').classList.remove('hidden');
+        document.getElementById('sub-modal').classList.add('flex');
+    }
+    
+    function hideSubscriptionModal() {
+        document.getElementById('sub-modal').classList.add('hidden');
+        document.getElementById('sub-modal').classList.remove('flex');
+    }
+
+    function subscribePlan(price) {
+        if (user.id === 'guest') {
+            showToast("Please create an account to subscribe.");
+            hideSubscriptionModal();
+            closeInterstitialAd(); 
+            navTo('auth');
+            return;
+        }
+
+        // Razorpay One-Time Payment Flow
+        const options = {
+            "key": "rzp_test_SjKEWK0QfQUfzQ", // Your Razorpay Test Key ID
+            "amount": price * 100, // Amount is in currency subunits (paise)
+            "currency": "INR",
+            "name": "M Sahil Flix",
+            "description": price >= 499 ? "Ultra Ad-Free (One-Time)" : "Premium Ad-Free (One-Time)",
+            "handler": function (response) {
+                // Payment Success
+                user.isSubscribed = true;
+                user.subscriptionTier = price >= 499 ? 'ultra' : 'premium';
+                syncActiveUser();
+                updateUserUI();
+                if(document.getElementById('settings').style.display !== 'none') updateSettingsUI();
+                showToast(`Successfully purchased ${price >= 499 ? 'Ultra' : 'Premium'}! Ads removed.`);
+                hideSubscriptionModal();
+                closeInterstitialAd(); 
+            },
+            "prefill": {
+                "name": user.name,
+                "email": user.id.includes('@') ? user.id : "user@msahilflix.com",
+                "contact": !user.id.includes('@') ? user.id : "9999999999"
+            },
+            "theme": {
+                "color": "#E11D48"
+            }
+        };
+
+        try {
+            const rzp1 = new window.Razorpay(options);
+            
+            rzp1.on('payment.failed', function (response){
+                showToast("Payment failed: " + response.error.description);
+            });
+
+            rzp1.open();
+        } catch (err) {
+            showToast("Razorpay SDK failed to load. Please check your connection.");
+        }
+    }
+
+    function updateUserUI() {
+        const bals = document.querySelectorAll('#coin-balance, #lock-balance');
+        bals.forEach(el => { if(el) el.innerText = user.coins; });
+
+        const adBanner = document.getElementById('profile-ad-banner');
+        const badgeContainer = document.getElementById('profile-badge-container');
+        
+        if (badgeContainer) {
+            badgeContainer.innerHTML = getBadgeHtml(user.subscriptionTier, user.isSubscribed);
+        }
+        
+        if (adBanner) {
+            if (user.isSubscribed || isAdmin) {
+                adBanner.style.display = 'none';
+            } else {
+                adBanner.style.display = 'flex';
+            }
+        }
+    }
+
+    function showCoinModal() { 
+        const m = document.getElementById('coin-modal'); 
+        if(m) { m.classList.remove('hidden'); m.style.display = 'flex'; }
+    }
+    
+    function hideCoinModal() { 
+        const m = document.getElementById('coin-modal'); 
+        if(m) { m.classList.add('hidden'); m.style.display = 'none'; }
+    }
+
+    // --- BOTTOM SHEETS & UI ---
+    function openEpisodesSheet() {
+        const sheet = document.getElementById('episodes-sheet');
+        const container = document.getElementById('episodes-list-container');
+        const drama = dramas.find(d => d.id === activeDramaId);
+        if (!drama || !sheet || !container) return;
+        
+        document.getElementById('sheet-ep-count').innerText = `${drama.episodes.length} Episodes`;
+        
+        container.innerHTML = drama.episodes.map((ep, i) => {
+            const isUnlocked = isAdmin || ep.cost === 0 || user.unlockedEpisodes.includes(ep.id);
+            const isActive = i === currentEpIndex;
+            return `
+                <div onclick="selectEpisodeFromSheet(${i})" class="flex justify-between items-center p-3 rounded-xl cursor-pointer transition-colors active:scale-95 ${isActive ? 'bg-primary/20 border border-primary/50' : 'bg-slate-800/50 hover:bg-slate-800'}">
+                    <div class="flex items-center gap-3">
+                        <div class="w-6 text-center text-sm font-bold ${isActive ? 'text-primary' : 'text-slate-400'}">${i + 1}</div>
+                        <div>
+                            <p class="text-sm font-bold ${isActive ? 'text-white' : 'text-slate-200'}">${ep.title}</p>
+                            <p class="text-[10px] text-slate-500">2 mins</p>
+                        </div>
+                    </div>
+                    <div>
+                        ${isUnlocked ? '<span class="text-[10px] bg-slate-700 px-2 py-1 rounded text-slate-300">Free/Owned</span>' : `<span class="flex items-center gap-1 text-[10px] bg-yellow-500/20 text-yellow-500 px-2 py-1 rounded font-bold"><i class="ph-fill ph-lock-key"></i> ${ep.cost}</span>`}
+                    </div>
+                </div>
+            `;
+        }).join('');
+        
+        sheet.classList.remove('hidden');
+        sheet.style.display = 'flex';
+    }
+
+    function closeEpisodesSheet() {
+        const sheet = document.getElementById('episodes-sheet');
+        if (sheet) { sheet.classList.add('hidden'); sheet.style.display = 'none'; }
+    }
+
+    function selectEpisodeFromSheet(index) {
+        currentEpIndex = index;
+        closeEpisodesSheet();
+        loadEpisode();
+    }
+
+    function showToast(msg) {
+        const toast = document.getElementById('toast');
+        if (!toast) return;
+        toast.innerText = msg;
+        toast.classList.remove('opacity-0', 'translate-y-[-20px]');
+        toast.classList.add('opacity-100', 'translate-y-0');
+        setTimeout(() => {
+            toast.classList.remove('opacity-100', 'translate-y-0');
+            toast.classList.add('opacity-0', 'translate-y-[-20px]');
+        }, 2500);
+    }
+
+    // --- ADMIN SERIES & EPISODE SYSTEM ---
+
+    function toggleUploadMethod() {
+        const method = document.querySelector('input[name="upload-method"]:checked').value;
+        if (method === 'device') {
+            document.getElementById('method-device').style.display = 'block';
+            document.getElementById('method-url').style.display = 'none';
+        } else {
+            document.getElementById('method-device').style.display = 'none';
+            document.getElementById('method-url').style.display = 'block';
+        }
+    }
+
+    function adminCreateSeries() {
+        if (!isAdmin) return; 
+        const title = document.getElementById('admin-title').value;
+        const desc = document.getElementById('admin-desc').value;
+        const cover = document.getElementById('admin-cover').value || 'https://images.unsplash.com/photo-1598899134739-24c46f58b8c0?auto=format&fit=crop&w=800&q=80';
+        const cat = document.getElementById('admin-cat').value;
+
+        if(!title) { showToast("Series Title is required!"); return; }
+
+        const newSeries = {
+            id: 'd_new_' + Date.now(),
+            title: title,
+            desc: desc,
+            cover: cover,
+            category: cat,
+            trending: true,
+            episodes: [] 
+        };
+
+        dramas.unshift(newSeries);
+        saveDramasAndRefresh();
+        showToast(`Series "${title}" created successfully!`);
+
+        document.getElementById('admin-title').value = '';
+        document.getElementById('admin-desc').value = '';
+    }
+
+    function updateAdminSeriesDropdown() {
+        const selectAdd = document.getElementById('admin-series-select');
+        const selectManage = document.getElementById('admin-manage-series-select');
+        
+        let optionsHTML = '<option value="" disabled selected>-- Select a Series --</option>';
+        dramas.forEach(drama => {
+            optionsHTML += `<option value="${drama.id}">${drama.title} (${drama.episodes ? drama.episodes.length : 0} Eps)</option>`;
+        });
+
+        if (selectAdd) selectAdd.innerHTML = optionsHTML;
+        if (selectManage) {
+            const currentVal = selectManage.value;
+            selectManage.innerHTML = optionsHTML;
+            if (currentVal && dramas.find(d => d.id === currentVal)) {
+                selectManage.value = currentVal;
+            }
+            renderManageEpisodes();
+        }
+    }
+
+    async function adminAddEpisode() {
+        if (!isAdmin) return;
+        const seriesId = document.getElementById('admin-series-select').value;
+        const method = document.querySelector('input[name="upload-method"]:checked').value;
+        const fileInput = document.getElementById('admin-video-file');
+        const urlInput = document.getElementById('admin-video-url');
+        const costInput = document.getElementById('admin-ep-cost').value;
+
+        if (!seriesId) { showToast("Please select a series first."); return; }
+
+        const drama = dramas.find(d => d.id === seriesId);
+        if (!drama) return;
+
+        let customVideoUrl = "";
+
+        if (method === 'device') {
+            if (fileInput.files.length === 0) { showToast("Please select a video file to upload."); return; }
+            const file = fileInput.files[0];
+
+            if (file.size > 3.5 * 1024 * 1024) { 
+                showToast("File large! Using session URL. Won't save across reloads.");
+                customVideoUrl = URL.createObjectURL(file);
+            } else {
+                showToast("Processing video upload...");
+                customVideoUrl = await new Promise((resolve, reject) => {
+                    const reader = new FileReader();
+                    reader.onload = (e) => resolve(e.target.result);
+                    reader.onerror = (e) => reject(e);
+                    reader.readAsDataURL(file);
+                });
+            }
+        } else {
+            if (!urlInput.value.trim()) { showToast("Please enter a video URL."); return; }
+            customVideoUrl = urlInput.value.trim();
+        }
+
+        if (!drama.episodes) drama.episodes = [];
+        
+        const nextEpNum = drama.episodes.length + 1;
+        const cost = parseInt(costInput) || 0;
+
+        drama.episodes.push({
+            id: `ep_custom_${Date.now()}_${nextEpNum}`,
+            title: `Episode ${nextEpNum}`,
+            cost: cost,
+            video: customVideoUrl
+        });
+
+        saveDramasAndRefresh();
+        showToast(`Episode ${nextEpNum} added & saved to ${drama.title}!`);
+        
+        fileInput.value = '';
+        urlInput.value = '';
+    }
+
+    function renderManageEpisodes() {
+        const seriesId = document.getElementById('admin-manage-series-select').value;
+        const container = document.getElementById('admin-episodes-list');
+        if (!seriesId || !container) return;
+
+        const drama = dramas.find(d => d.id === seriesId);
+        if (!drama || !drama.episodes || drama.episodes.length === 0) {
+            container.innerHTML = `<p class="text-sm text-slate-400 text-center py-4">No episodes found.</p>`;
+            return;
+        }
+
+        container.innerHTML = drama.episodes.map((ep, i) => `
+            <div class="flex items-center justify-between bg-darkbg p-3 rounded-xl border border-slate-700">
+                <div class="flex-1 truncate pr-2">
+                    <p class="text-sm font-bold text-white truncate">${ep.title}</p>
+                    <p class="text-[10px] text-slate-400">Cost: ${ep.cost}</p>
+                </div>
+                <div class="flex items-center gap-2">
+                    <button onclick="editEpisode('${drama.id}', '${ep.id}')" class="w-8 h-8 bg-slate-700 hover:bg-slate-600 rounded-full flex items-center justify-center text-white transition-colors">
+                        <i class="ph-fill ph-pencil-simple"></i>
+                    </button>
+                    <button onclick="deleteEpisode('${drama.id}', '${ep.id}')" class="w-8 h-8 bg-rose-600/20 hover:bg-rose-600/40 border border-rose-600/50 rounded-full flex items-center justify-center text-rose-500 transition-colors">
+                        <i class="ph-fill ph-trash"></i>
+                    </button>
+                </div>
+            </div>
+        `).join('');
+    }
+
+    function deleteEpisode(seriesId, epId) {
+        if (!confirm("Are you sure you want to delete this episode? This cannot be undone.")) return;
+
+        const drama = dramas.find(d => d.id === seriesId);
+        if (!drama) return;
+
+        drama.episodes = drama.episodes.filter(ep => ep.id !== epId);
+        
+        drama.episodes.forEach((ep, index) => {
+            ep.title = `Episode ${index + 1}`;
+        });
+
+        saveDramasAndRefresh();
+        showToast("Episode deleted and series renumbered.");
+    }
+
+    function editEpisode(seriesId, epId) {
+        const drama = dramas.find(d => d.id === seriesId);
+        if (!drama) return;
+        const ep = drama.episodes.find(e => e.id === epId);
+        if (!ep) return;
+
+        document.getElementById('edit-ep-series-id').value = seriesId;
+        document.getElementById('edit-ep-id').value = epId;
+        document.getElementById('edit-ep-cost').value = ep.cost;
+        document.getElementById('edit-ep-video').value = ep.video;
+
+        const modal = document.getElementById('edit-ep-modal');
+        modal.classList.remove('hidden');
+        modal.style.display = 'flex';
+    }
+
+    function saveEditedEpisode() {
+        const seriesId = document.getElementById('edit-ep-series-id').value;
+        const epId = document.getElementById('edit-ep-id').value;
+        const cost = parseInt(document.getElementById('edit-ep-cost').value) || 0;
+        const videoUrl = document.getElementById('edit-ep-video').value;
+
+        const drama = dramas.find(d => d.id === seriesId);
+        if (drama) {
+            const ep = drama.episodes.find(e => e.id === epId);
+            if (ep) {
+                ep.cost = cost;
+                ep.video = videoUrl;
+                saveDramasAndRefresh();
+                showToast("Episode updated!");
+            }
+        }
+        closeEditModal();
+    }
+
+    function closeEditModal() {
+        const modal = document.getElementById('edit-ep-modal');
+        modal.classList.add('hidden');
+        modal.style.display = 'none';
+    }
+
+    function saveAdSettings() {
+        if (!isAdmin) return;
+        const freq = parseInt(document.getElementById('admin-ad-freq').value);
+        if (freq > 0) {
+            adFrequency = freq;
+            localStorage.setItem('dramaBite_ad_freq', adFrequency);
+            showToast("Ad frequency updated!");
+        } else {
+            showToast("Invalid frequency.");
+        }
+    }
+
+    function saveDramasAndRefresh() {
+        try {
+            localStorage.setItem('dramaBite_dramas', JSON.stringify(dramas));
+        } catch(e) {
+            console.error("Storage Error:", e);
+        }
+        updateAdminSeriesDropdown();
+        renderHome();
+        renderMyList();
+    }
+
+    function changeAdminPassword() {
+        if (!isAdmin) return;
+        const newPass = document.getElementById('admin-new-pass').value;
+        if (!newPass) {
+            showToast("Please enter a new password");
+            return;
+        }
+        adminPass = newPass;
+        localStorage.setItem('dramaBite_admin_pass', adminPass);
+        document.getElementById('admin-new-pass').value = '';
+        showToast("Admin password updated securely!");
+    }
+
+    function clearLocalStorageData() {
+        if (!isAdmin) return;
+        localStorage.removeItem('dramaBite_dramas');
+        showToast("Storage cleared! Refreshing app...");
+        setTimeout(() => window.location.reload(), 1500);
+    }
+
+</script>
+</body>
+</html>
